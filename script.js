@@ -32,6 +32,192 @@ let isAdmin = false;
 let adminToolsVisible = false;
 let unsubscribeAnnouncements = null;
 
+// ======================== USER LEVEL SYSTEM ========================
+
+const LEVEL_CONFIG = {
+    maxLevel: 999,
+    baseXP: 300,
+    xpMultiplier: 1,
+    xpPerMessage: { min: 2, max: 5 }
+};
+
+const LEVEL_TITLES = [
+    { min: 1, max: 5, title: 'Qi Condensation', icon: '🌱' },
+    { min: 6, max: 10, title: 'Foundation Establishment', icon: '🌱' },
+    { min: 11, max: 20, title: 'Core Formation', icon: '🌱' },
+    { min: 21, max: 30, title: 'Nascent Soul', icon: '⚡' },
+    { min: 31, max: 40, title: 'Soul Transformation', icon: '⚡️' },
+    { min: 41, max: 50, title: 'Ascendant', icon: '⚡' },
+    { min: 51, max: 60, title: 'Spirit Severing', icon: '🌕' },
+    { min: 61, max: 70, title: 'Void Refinement', icon: '🌕' },
+    { min: 71, max: 80, title: 'Tribulation Transcendence', icon: '🌕' },
+    { min: 81, max: 90, title: 'Yin-Yang', icon: '🌟' },
+    { min: 91, max: 99, title: 'Ancient Gods', icon: '🌟' },
+    { min: 100, max: 999, title: 'Grand Empyrean', icon: '🌟' }
+];
+
+let userLevelData = {
+    level: 1,
+    currentXP: 0,
+    totalXP: 0,
+    totalMessages: 0
+};
+
+function getXPForLevel(level) {
+    if (level <= 1) return 0;
+    return Math.floor(LEVEL_CONFIG.baseXP * Math.pow(LEVEL_CONFIG.xpMultiplier, level - 1));
+}
+
+function getLevelInfo(level) {
+    const titleData = LEVEL_TITLES.find(t => level >= t.min && level <= t.max);
+    return {
+        title: titleData ? titleData.title : 'Unknown',
+        icon: titleData ? titleData.icon : '❓'
+    };
+}
+
+function getLevelProgress() {
+    const nextLevelXP = getXPForLevel(userLevelData.level + 1);
+    if (userLevelData.level >= LEVEL_CONFIG.maxLevel) return 100;
+    return Math.min(100, Math.floor((userLevelData.currentXP / nextLevelXP) * 100));
+}
+
+function getRandomXP() {
+    const { min, max } = LEVEL_CONFIG.xpPerMessage;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+async function addXP(amount) {
+    if (!currentUser) return;
+    
+    const oldLevel = userLevelData.level;
+    userLevelData.currentXP += amount;
+    userLevelData.totalXP += amount;
+    userLevelData.totalMessages++;
+    
+    // Check level up
+    let leveledUp = false;
+    while (userLevelData.level < LEVEL_CONFIG.maxLevel) {
+        const xpNeeded = getXPForLevel(userLevelData.level + 1);
+        if (userLevelData.currentXP >= xpNeeded) {
+            userLevelData.currentXP -= xpNeeded;
+            userLevelData.level++;
+            leveledUp = true;
+        } else {
+            break;
+        }
+    }
+    
+    await saveUserLevelData();
+    updateLevelUI();
+    
+    if (leveledUp) {
+        const levelInfo = getLevelInfo(userLevelData.level);
+        showLevelUpNotification(userLevelData.level, levelInfo);
+    }
+}
+
+async function saveUserLevelData() {
+    if (!currentUser) return;
+    try {
+        await db.collection('users').doc(currentUser.uid).collection('stats').doc('level').set({
+            ...userLevelData,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    } catch (error) {
+        console.error('Error saving level data:', error);
+    }
+}
+
+async function loadUserLevelData() {
+    if (!currentUser) return;
+    
+    try {
+        const doc = await db.collection('users').doc(currentUser.uid).collection('stats').doc('level').get();
+        if (doc.exists) {
+            const data = doc.data();
+            userLevelData = {
+                level: data.level || 1,
+                currentXP: data.currentXP || 0,
+                totalXP: data.totalXP || 0,
+                totalMessages: data.totalMessages || 0,
+                lastMessageTime: data.lastMessageTime?.toDate() || null
+            };
+        } else {
+            // Initialize new user
+            userLevelData = {
+                level: 1,
+                currentXP: 0,
+                totalXP: 0,
+                totalMessages: 0,
+                lastMessageTime: null
+            };
+            await saveUserLevelData();
+        }
+        
+        // Update UI dan tampilkan container
+        updateLevelUI();
+        
+    } catch (error) {
+        console.error('Error loading level data:', error);
+    }
+}
+
+
+function updateLevelUI() {
+    const container = document.getElementById('user-level-container');
+    if (!container) return;
+    
+    const levelInfo = getLevelInfo(userLevelData.level);
+    const progress = getLevelProgress();
+    const nextLevelXP = getXPForLevel(userLevelData.level + 1);
+    
+    container.innerHTML = `
+        <div class="flex items-center gap-2 px-2 py-2 bg-gradient-to-r from-black to-gray-500 rounded-lg">
+            <div class="relative flex-shrink-0">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-white to-black flex items-center justify-center text-black font-bold text-xs shadow-lg">
+                    ${levelInfo.icon}
+                </div>
+                <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center text-[7px] font-bold text-white border border-white">
+                    ${userLevelData.level}
+                </div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between mb-0.5">
+                    <span class="text-xs font-medium text-white truncate">${levelInfo.title}</span>
+                    <span class="text-[10px] text-gray-400 ml-1">${userLevelData.currentXP}/${nextLevelXP} XP</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-300 to-gray-400 h-full rounded-full transition-all duration-500" 
+                         style="width: ${progress}%"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Pastikan container terlihat
+    container.classList.remove('hidden');
+}
+
+
+function showLevelUpNotification(newLevel, levelInfo) {
+    const notif = document.createElement('div');
+    notif.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] animate-bounce';
+    notif.innerHTML = `
+        <div class="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 text-white px-6 py-4 rounded-2xl shadow-2xl border border-white/20 hidden">
+            <div class="flex items-center gap-3">
+                <div class="text-4xl animate-pulse">${levelInfo.icon}</div>
+                <div>
+                    <div class="text-xs uppercase tracking-wider text-white/80">Level Up!</div>
+                    <div class="text-xl font-bold">Level ${newLevel} - ${levelInfo.title}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 4000);
+}
+
 
 // ======================== ADMIN FUNCTIONS ========================
 
@@ -763,6 +949,12 @@ auth.onAuthStateChanged(async (user) => {
             await initializeNewUser(user);
         }
         
+        await loadUserLevelData();
+        // Show level container
+        const levelContainer = document.getElementById('user-level-container');
+        if (levelContainer) levelContainer.classList.remove('hidden');
+
+        
         await loadAISettings();
         
         if (isNewUser) {
@@ -820,7 +1012,7 @@ function showEmptyWelcome() {
                      class="relative w-16 h-16 rounded-full border-2 border-gray-700 object-cover">
             </div>
             <h2 id="welcome-ai-name" class="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Selamat Datang${currentUser ? ', ' + (currentUser.displayName || 'User') : ''}!</h2>
-            <p class="text-gray-400 max-w-md text-sm">Istrimu yang siap membantumu sepanjang waktu. Tanyakan apa saja, saya siap membantu 24/7.</p>
+            <p class="text-gray-400 max-w-md text-sm">Istrimu yang siap membantumu sepanjang waktu. Tanyakan apa saja, saya siap membantu 24/7. Klik profil AI untuk Kustomisasi.</p>
         </div>
     `;
     
@@ -866,20 +1058,24 @@ async function loadUserProfile() {
 
 
 function updateUserInfo(user) {
-    const userInfo = getElement('user-info');
-    const userAvatar = getElement('user-avatar');
-    const userName = getElement('user-name');
-    const userEmail = getElement('user-email');
+    const userInfo = document.getElementById('user-info');
+    const userAvatar = document.getElementById('user-avatar');
+    const userName = document.getElementById('user-name');
+    const userEmail = document.getElementById('user-email');
+    const levelContainer = document.getElementById('user-level-container');
 
     if (userInfo) userInfo.classList.remove('hidden');
     
-    // PERBAIKAN: Prioritaskan customAvatarData, kemudian photoURL, kemudian default
     const avatarSrc = customAvatarData || user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email)}&background=random&color=fff`;
     
     if (userAvatar) userAvatar.src = avatarSrc;
     if (userName) userName.textContent = user.displayName || 'User';
     if (userEmail) userEmail.textContent = user.email;
+    
+    // Tampilkan level container
+    if (levelContainer) levelContainer.classList.remove('hidden');
 }
+
 
 
 function toggleAuthMode() {
@@ -1002,6 +1198,23 @@ function resetAllState() {
         soundEnabled: false,
         statusIndicator: true
     };
+    
+    // Hide level container on logout
+    const levelContainer = document.getElementById('user-level-container');
+    if (levelContainer) {
+        levelContainer.classList.add('hidden');
+        levelContainer.innerHTML = '';
+    }
+    
+    // Reset level data
+    userLevelData = {
+        level: 1,
+        currentXP: 0,
+        totalXP: 0,
+        totalMessages: 0,
+        lastMessageTime: null
+    };
+    
     
     // Reset UI
     const chatHistoryEl = getElement('chat-history');
@@ -1512,6 +1725,12 @@ async function sendMessage() {
     
     const input = getElement('user-input');
     const sendBtn = getElement('send-btn');
+    const xpGained = getRandomXP();
+    await addXP(xpGained);
+    
+    // Optional: Show XP gained notification
+    showXPNotification(xpGained);
+
     if (!input) return;
     
     const message = input.value.trim();
@@ -1521,6 +1740,14 @@ async function sendMessage() {
         alert('Anda sedang offline. Periksa koneksi internet.');
         return;
     }
+    
+    function showXPNotification(xp) {
+    const notif = document.createElement('div');
+    notif.className = 'fixed bottom-24 right-4 bg-green-600/90 text-white px-3 py-1 rounded-full text-sm animate-slide-up z-50';
+    notif.innerHTML = `+${xp} XP`;
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 2000);
+}
 
     isProcessing = true;
     
