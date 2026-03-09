@@ -441,7 +441,17 @@ function subscribeToAnnouncementsRealtime() {
     });
 }
 
+// Di bagian STATE MANAGEMENT, tambahkan:
+let currentAlertId = null; // Untuk tracking alert yang sedang ditampilkan
+
+// Update fungsi showGlobalAlert:
 function showGlobalAlert(data) {
+    // Generate unique ID untuk alert ini
+    currentAlertId = data.timestamp + '_' + data.sender;
+    
+
+    
+
     // Hapus alert yang lama jika ada
     removeGlobalAlert();
     
@@ -557,6 +567,9 @@ function showGlobalAlert(data) {
     // Trigger reflow untuk memastikan animasi berjalan
     void alertContainer.offsetHeight;
     
+    // Simpan ke localStorage bahwa alert ini sedang ditampilkan
+    localStorage.setItem('currentAlertId', currentAlertId);
+    
     // Auto remove setelah 30 detik jika bukan admin
     if (!isAdmin) {
         setTimeout(() => {
@@ -586,7 +599,32 @@ function removeGlobalAlert() {
 
 function dismissGlobalAlert() {
     removeGlobalAlert();
-    localStorage.setItem('alertDismissedAt', Date.now());
+    // Simpan timestamp dismiss ke localStorage
+    localStorage.setItem('alertDismissedAt', Date.now().toString());
+    localStorage.setItem('lastAlertId', currentAlertId || '');
+}
+
+async function checkActiveAlert() {
+    if (!announcementsRef) return;
+    
+    try {
+        const snapshot = await announcementsRef.once('value');
+        const data = snapshot.val();
+        
+        if (data && data.active === true) {
+            // Cek apakah user sudah dismiss alert ini sebelumnya
+            const dismissedAt = localStorage.getItem('alertDismissedAt');
+            const lastAlertId = localStorage.getItem('lastAlertId');
+            const currentAlertTime = data.timestamp;
+            
+            // Tampilkan jika alert baru atau belum di-dismiss
+            if (!dismissedAt || currentAlertTime > parseInt(dismissedAt)) {
+                showGlobalAlert(data);
+            }
+        }
+    } catch (error) {
+        console.error('Error checking active alert:', error);
+    }
 }
 
 
@@ -1063,6 +1101,16 @@ auth.onAuthStateChanged(async (user) => {
     if (user) {
         // Inisialisasi Realtime Database
         initRealtimeDB();
+        
+        
+        // PERBAIKAN: Subscribe semua user ke announcements (bukan hanya admin)
+        subscribeToAnnouncementsRealtime();
+
+        if (isAdmin) {
+            showAdminTools();
+        }
+
+
         
         // Load API config
         const apiLoaded = await loadAPIConfig();
