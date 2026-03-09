@@ -94,6 +94,31 @@ function getRandomXP() {
 async function addXP(amount) {
     if (!currentUser) return;
     
+    // Validasi: cek apakah benar-benar ada pesan yang terkirim
+    if (!conversationContext || conversationContext.length === 0) {
+        console.warn('No conversation context, XP not added');
+        return;
+    }
+    
+    // Validasi: cek last message adalah dari AI (assistant)
+    const lastMessage = conversationContext[conversationContext.length - 1];
+    if (lastMessage.role !== 'assistant') {
+        console.warn('Last message not from AI, XP not added');
+        return;
+    }
+    
+    // Cek duplikasi XP (hindari double XP untuk pesan yang sama)
+    const messageHash = lastMessage.content.substring(0, 50); // Hash sederhana
+    const lastXPGivenFor = localStorage.getItem('lastXPGivenFor');
+    
+    if (lastXPGivenFor === messageHash) {
+        console.warn('XP already given for this message');
+        return;
+    }
+    
+    localStorage.setItem('lastXPGivenFor', messageHash);
+    
+    // Lanjutkan dengan kalkulasi XP
     const oldLevel = userLevelData.level;
     userLevelData.currentXP += amount;
     userLevelData.totalXP += amount;
@@ -120,6 +145,7 @@ async function addXP(amount) {
         showLevelUpNotification(userLevelData.level, levelInfo);
     }
 }
+
 
 async function saveUserLevelData() {
     if (!currentUser) return;
@@ -2163,31 +2189,37 @@ async function sendMessage() {
     
     const input = getElement('user-input');
     const sendBtn = getElement('send-btn');
-    const xpGained = getRandomXP();
-    await addXP(xpGained);
-    
-    // Optional: Show XP gained notification
-    showXPNotification(xpGained);
 
     if (!input) return;
     
     const message = input.value.trim();
     if (!message) return;
     
+    // CEK RATE LIMIT - Anti spam
+    const now = Date.now();
+    const lastMessageTime = userLevelData.lastMessageTime ? new Date(userLevelData.lastMessageTime).getTime() : 0;
+    const cooldownMs = 2000; // 2 detik cooldown
+    
+    if (now - lastMessageTime < cooldownMs) {
+        showNotification(`Tunggu ${Math.ceil((cooldownMs - (now - lastMessageTime)) / 1000)} detik sebelum mengirim lagi`, 'warning');
+        return;
+    }
+    
+    // Update last message time untuk rate limiting
+    userLevelData.lastMessageTime = new Date();
+    
     if (!navigator.onLine) {
         alert('Anda sedang offline. Periksa koneksi internet.');
         return;
     }
     
-    function showXPNotification(xp) {
-    const notif = document.createElement('div');
-    notif.className = 'fixed bottom-24 right-4 bg-green-600/90 text-white px-3 py-1 rounded-full text-sm animate-slide-up z-50';
-    notif.innerHTML = `+${xp} XP`;
-    document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), 2000);
-}
+    // PINDAH: XP hanya didapat setelah respons AI berhasil
+    // HAPUS: const xpGained = getRandomXP();
+    // HAPUS: await addXP(xpGained);
+    // HAPUS: showXPNotification(xpGained);
 
     isProcessing = true;
+
     
     // Efek loading pada tombol
     if (sendBtn) {
@@ -2213,7 +2245,7 @@ async function sendMessage() {
     // Tampilkan typing indicator (titik-titik)
     showTypingIndicator();
 
-    try {
+        try {
         const response = await fetchAIResponse(message);
         removeTypingIndicator();
         
@@ -2222,6 +2254,12 @@ async function sendMessage() {
             await addAIMessageWithTyping(response, true);
             
             conversationContext.push({ role: 'assistant', content: response });
+            
+            // PINDAH KE SINI: XP hanya ditambahkan setelah respons berhasil
+            const xpGained = getRandomXP();
+            await addXP(xpGained);
+            showXPNotification(xpGained);
+            
             await saveCurrentChat();
             loadChatHistory();
             updateAPIStatus('✅ Terhubung', 'green');
@@ -2230,7 +2268,7 @@ async function sendMessage() {
         removeTypingIndicator();
         console.error('Error detail:', error);
         
-        // Error message tetap ditampilkan langsung
+        // XP TIDAK DITAMBAHKAN saat error
         addMessageToUI('Maaf sayang, ada masalah nih 😅 ' + error.message, 'ai', true, true);
         updateAPIStatus('❌ Error', 'red');
     } finally {
@@ -2251,6 +2289,16 @@ async function sendMessage() {
         }
     }
 }
+
+// Fungsi showXPNotification dipindahkan ke luar sendMessage
+function showXPNotification(xp) {
+    const notif = document.createElement('div');
+    notif.className = 'fixed bottom-24 right-4 bg-green-600/90 text-white px-3 py-1 rounded-full text-sm animate-slide-up z-50';
+    notif.innerHTML = `+${xp} XP`;
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 2000);
+}
+
 
 
 // ======================== EMOJI PICKER ========================
