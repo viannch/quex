@@ -37,9 +37,11 @@ let unsubscribeAnnouncements = null;
 
 // ======================== USER LEVEL SYSTEM ========================
 
+// ======================== USER LEVEL SYSTEM ========================
+
 const LEVEL_CONFIG = {
     maxLevel: 900,
-    baseXP: 850,
+    baseXP: 500,
     xpMultiplier: 1,
     xpPerMessage: { min: 2, max: 10 }
 };
@@ -57,8 +59,9 @@ const LEVEL_TITLES = [
     { min: 81, max: 90, title: 'Yin-Yang', icon: '<i class="ri-shining-2-fill"></i>' },
     { min: 91, max: 99, title: 'Ancient Gods', icon: '<i class="ri-shining-2-fill"></i>' },
     { min: 100, max: 900, title: 'Grand Empyrean', icon: '<i class="ri-shining-2-fill"></i>' },
-    { min: 999, max: 999, title: 'kRazy K', icon: '<i class="ri-meteor-fill"></i>' }
-];
+    { min: 999, max: 999, title: 'kRazy K', icon: '<i class="ri-meteor-fill"></i>' },
+    { min: 99999, max: 99999999999999999999, title: 'Emperor', icon: '<i class="ri-dingding-fill text-red-600"></i>' }
+]; // <-- Perbaikan: Tutup array dengan benar
 
 let userLevelData = {
     level: 1,
@@ -194,6 +197,7 @@ async function loadUserLevelData() {
 }
 
 
+// Update function updateLevelUI dengan desain modern
 function updateLevelUI() {
     const container = document.getElementById('user-level-container');
     if (!container) return;
@@ -201,51 +205,618 @@ function updateLevelUI() {
     const levelInfo = getLevelInfo(userLevelData.level);
     const progress = getLevelProgress();
     const nextLevelXP = getXPForLevel(userLevelData.level + 1);
+    const xpToNextLevel = nextLevelXP - userLevelData.currentXP;
+    
+    // Hitung persentase untuk progress bar dengan presisi
+    const progressPercent = Math.min(100, (userLevelData.currentXP / nextLevelXP) * 100);
     
     container.innerHTML = `
-        <div class="flex items-center gap-2 px-2 py-2 bg-gradient-to-r from-black to-gray-500 rounded-lg">
-            <div class="relative flex-shrink-0">
-                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-white to-black flex items-center justify-center text-black font-bold text-xs shadow-lg">
-                    ${levelInfo.icon}
+        <div class="modern-level-card">
+            <!-- Header dengan level dan icon -->
+            <div class="level-header">
+                <div class="level-icon-wrapper">
+                    <div class="level-icon-bg"></div>
+                    <div class="level-icon">${levelInfo.icon}</div>
+                    <div class="level-badge">${userLevelData.level}</div>
                 </div>
-                <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center text-[7px] font-bold text-white border border-white">
-                    ${userLevelData.level}
+                
+                <div class="level-title-section">
+                    <div class="level-title">${levelInfo.title}</div>
+                    <div class="level-subtitle">Cultivation</div>
+                </div>
+                
+                <div class="level-xp-total">
+                    <div class="xp-total-label">Total XP</div>
+                    <div class="xp-total-value">${formatNumber(userLevelData.totalXP)}</div>
                 </div>
             </div>
-            <div class="flex-1 min-w-0">
-                <div class="flex items-center justify-between mb-0.5">
-                    <span class="text-xs font-medium text-white truncate">${levelInfo.title}</span>
-                    <span class="text-[10px] text-gray-400 ml-1">${userLevelData.currentXP}/${nextLevelXP} XP</span>
+            
+            <!-- Progress bar modern -->
+            <div class="level-progress-container">
+                <div class="progress-info">
+                    <div class="progress-label">
+                        <span>Progress to Level ${userLevelData.level + 1}</span>
+                        <span class="progress-percentage">${progress}%</span>
+                    </div>
+                    <div class="xp-detail">
+                        <span class="xp-current">${formatNumber(userLevelData.currentXP)} XP</span>
+                        <span class="xp-separator">/</span>
+                        <span class="xp-next">${formatNumber(nextLevelXP)} XP</span>
+                    </div>
                 </div>
-                <div class="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                    <div class="bg-gradient-to-r from-gray-300 to-gray-400 h-full rounded-full transition-all duration-500" 
-                         style="width: ${progress}%"></div>
+                
+                <div class="progress-bar-modern">
+                    <div class="progress-bar-fill-modern" style="width: ${progressPercent}%">
+                        <div class="progress-bar-shine"></div>
+                    </div>
+                </div>
+                
+                <div class="progress-footer">
+                    <div class="xp-remaining">
+                        <svg class="xp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span>${formatNumber(xpToNextLevel)} XP to next level</span>
+                    </div>
+                    
+                    <div class="messages-count">
+                        <svg class="msg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span>${formatNumber(userLevelData.totalMessages)} msgs</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Achievement preview (optional) -->
+            <div class="level-achievement-preview">
+                <div class="achievement-dots">
+                    ${generateAchievementDots(userLevelData.level)}
+                </div>
+                <div class="next-achievement">
+                    Next: ${getNextAchievement(userLevelData.level)}
                 </div>
             </div>
         </div>
     `;
+    
+    // Tambahkan CSS jika belum ada
+    addModernLevelStyles();
     
     // Pastikan container terlihat
     container.classList.remove('hidden');
 }
 
+// Helper function untuk format angka
+function formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+}
 
+// Generate achievement dots
+function generateAchievementDots(currentLevel) {
+    const milestones = [10, 25, 50, 100, 250, 500, 900];
+    let dots = '';
+    
+    milestones.forEach((milestone, index) => {
+        const achieved = currentLevel >= milestone;
+        const nextMilestone = milestones.find(m => m > currentLevel) || 999;
+        const isNext = milestone === nextMilestone && !achieved;
+        
+        dots += `
+            <div class="achievement-dot ${achieved ? 'achieved' : ''} ${isNext ? 'next' : ''}" 
+                 title="Level ${milestone}">
+                <span class="dot-tooltip">Level ${milestone}</span>
+            </div>
+        `;
+    });
+    
+    return dots;
+}
+
+// Get next achievement
+function getNextAchievement(currentLevel) {
+    const milestones = [10, 25, 50, 100, 250, 500, 900];
+    const nextMilestone = milestones.find(m => m > currentLevel);
+    
+    if (!nextMilestone) return 'Max Level';
+    
+    const levelInfo = getLevelInfo(nextMilestone);
+    return `${levelInfo.title} (Lv.${nextMilestone})`;
+}
+
+// Tambahkan CSS styles
+function addModernLevelStyles() {
+    if (document.getElementById('modern-level-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'modern-level-styles';
+    style.textContent = `
+        /* Modern Level Card - Monochrome Design */
+        .modern-level-card {
+            background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(10, 10, 10, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 16px;
+            margin: 8px 0;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Shine effect */
+        .modern-level-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+            transition: left 0.7s ease;
+            pointer-events: none;
+        }
+        
+        .modern-level-card:hover::before {
+            left: 100%;
+        }
+        
+        /* Level Header */
+        .level-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        /* Level Icon */
+        .level-icon-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .level-icon-bg {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transform: rotate(45deg);
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .level-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            position: relative;
+            z-index: 1;
+            filter: grayscale(100%);
+            transition: filter 0.3s ease;
+        }
+        
+        .modern-level-card:hover .level-icon {
+            filter: grayscale(70%);
+        }
+        
+        .level-badge {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            min-width: 20px;
+            height: 20px;
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 800;
+            color: #000000;
+            padding: 0 4px;
+            z-index: 2;
+        }
+        
+        /* Level Title */
+        .level-title-section {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .level-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: -0.2px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .level-subtitle {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Total XP */
+        .level-xp-total {
+            text-align: right;
+            flex-shrink: 0;
+        }
+        
+        .xp-total-label {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        
+        .xp-total-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            font-family: 'SF Mono', monospace;
+        }
+        
+        /* Progress Container */
+        .level-progress-container {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .progress-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .progress-percentage {
+            font-weight: 600;
+            color: #ffffff;
+            margin-left: 6px;
+        }
+        
+        .xp-detail {
+            font-size: 11px;
+            font-family: 'SF Mono', monospace;
+        }
+        
+        .xp-current {
+            color: #ffffff;
+            font-weight: 500;
+        }
+        
+        .xp-separator {
+            color: rgba(255, 255, 255, 0.3);
+            margin: 0 4px;
+        }
+        
+        .xp-next {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Progress Bar */
+        .progress-bar-modern {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 10px;
+        }
+        
+        .progress-bar-fill-modern {
+            height: 100%;
+            background: linear-gradient(90deg, #4a4a4a, #7a7a7a, #9a9a9a);
+            border-radius: 3px;
+            position: relative;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .progress-bar-shine {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.2) 50%, 
+                transparent 100%);
+            animation: shine 2s infinite;
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%); }
+            20% { transform: translateX(100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Progress Footer */
+        .progress-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .xp-remaining, .messages-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .xp-icon, .msg-icon {
+            width: 12px;
+            height: 12px;
+            stroke: rgba(255, 255, 255, 0.4);
+        }
+        
+        /* Achievement Preview */
+        .level-achievement-preview {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .achievement-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .achievement-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            position: relative;
+            cursor: help;
+            transition: all 0.2s ease;
+        }
+        
+        .achievement-dot.achieved {
+            background: #ffffff;
+            transform: scale(1.2);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
+        
+        .achievement-dot.next {
+            background: #ffffff;
+            animation: pulse-dot 1.5s infinite;
+        }
+        
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+        
+        .achievement-dot:hover .dot-tooltip {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: none;
+        }
+        
+        .dot-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(5px);
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 8px;
+            color: white;
+            white-space: nowrap;
+            opacity: 0;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .next-achievement {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .modern-level-card {
+                padding: 12px;
+            }
+            
+            .level-icon-bg, .level-icon {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .level-icon {
+                font-size: 20px;
+            }
+            
+            .level-title {
+                font-size: 12px;
+            }
+            
+            .xp-total-value {
+                font-size: 12px;
+            }
+            
+            .progress-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+            
+            .xp-detail {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+            }
+            
+            .progress-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+        }
+        
+        /* Animation for level up */
+        @keyframes levelUpPulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+        }
+        
+        .modern-level-card.level-up {
+            animation: levelUpPulse 1s ease-out;
+        }
+    `;
+    
+    document.head.appendChild(style);
+}
+
+// Override showLevelUpNotification untuk animasi yang lebih smooth
 function showLevelUpNotification(newLevel, levelInfo) {
+    // Tambahkan animasi ke card
+    const levelCard = document.querySelector('.modern-level-card');
+    if (levelCard) {
+        levelCard.classList.add('level-up');
+        setTimeout(() => levelCard.classList.remove('level-up'), 1000);
+    }
+    
+    // Tampilkan notifikasi modern
     const notif = document.createElement('div');
-    notif.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-[200] animate-bounce';
+    notif.className = 'level-up-notification-modern';
     notif.innerHTML = `
-        <div class="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 text-white px-6 py-4 rounded-2xl shadow-2xl border border-white/20 hidden">
-            <div class="flex items-center gap-3">
-                <div class="text-4xl animate-pulse">${levelInfo.icon}</div>
-                <div>
-                    <div class="text-xs uppercase tracking-wider text-white/80">Level Up!</div>
-                    <div class="text-xl font-bold">Level ${newLevel} - ${levelInfo.title}</div>
-                </div>
+        <div class="level-up-content">
+            <div class="level-up-icon">${levelInfo.icon}</div>
+            <div class="level-up-text">
+                <div class="level-up-label">LEVEL UP!</div>
+                <div class="level-up-detail">Level ${newLevel} • ${levelInfo.title}</div>
             </div>
         </div>
     `;
+    
+    // Tambahkan style untuk notifikasi
+    const style = document.createElement('style');
+    style.textContent = `
+        .level-up-notification-modern {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 40px;
+            padding: 12px 24px;
+            z-index: 9999;
+            animation: slideDownLevel 0.5s ease-out, fadeOutLevel 0.5s ease-out 2.5s forwards;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        .level-up-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .level-up-icon {
+            font-size: 32px;
+            filter: grayscale(100%);
+            animation: bounceIcon 1s ease infinite;
+        }
+        
+        .level-up-text {
+            text-align: left;
+        }
+        
+        .level-up-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 2px;
+            margin-bottom: 2px;
+        }
+        
+        .level-up-detail {
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+        }
+        
+        @keyframes slideDownLevel {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+        
+        @keyframes fadeOutLevel {
+            to {
+                opacity: 0;
+                transform: translate(-50%, -10px);
+            }
+        }
+        
+        @keyframes bounceIcon {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        @media (max-width: 640px) {
+            .level-up-notification-modern {
+                padding: 10px 20px;
+                top: 70px;
+            }
+            
+            .level-up-icon {
+                font-size: 24px;
+            }
+            
+            .level-up-detail {
+                font-size: 14px;
+            }
+        }
+    `;
+    
+    document.head.appendChild(style);
     document.body.appendChild(notif);
-    setTimeout(() => notif.remove(), 4000);
+    
+    setTimeout(() => {
+        notif.remove();
+        style.remove();
+    }, 3000);
 }
 
 
@@ -2293,7 +2864,7 @@ async function sendMessage() {
 // Fungsi showXPNotification dipindahkan ke luar sendMessage
 function showXPNotification(xp) {
     const notif = document.createElement('div');
-    notif.className = 'fixed bottom-24 right-4 bg-green-600/90 text-white px-3 py-1 rounded-full text-sm animate-slide-up z-50';
+    notif.className = 'fixed bottom-32 right-4 bg-green-600/90 text-white px-3 py-1 rounded-full text-sm animate-slide-up z-50';
     notif.innerHTML = `+${xp} XP`;
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 2000);
@@ -2495,7 +3066,7 @@ function addMessageToUI(text, sender, animate = true, isError = false) {
     const avatar = `<img src="${userAvatarSrc}" class="w-8 h-8 rounded-full border border-gray-700 mt-1">`;
     
     const bubbleClass = sender === 'user' 
-        ? 'bg-white text-black' 
+        ? 'bg-[#3EB575] text-[#111111]' 
         : (isError ? 'bg-red-900/30 border-red-800 text-red-200' : 'message-bubble text-white');
     
     // Bersihkan pesan dari gambar
@@ -2530,9 +3101,17 @@ function formatMessage(text) {
     return formatted;
 }
 
+// Perbaiki fungsi scrollToBottom
 function scrollToBottom() {
-    const container = getElement('chat-container');
-    if (container) setTimeout(() => container.scrollTop = container.scrollHeight, 100);
+    const container = document.getElementById('chat-container');
+    if (container) {
+        setTimeout(() => {
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: 'smooth'
+            });
+        }, 100);
+    }
 }
 
 function showTypingIndicator() {
@@ -3548,7 +4127,466 @@ addXP = async function(amount) {
     }
 };
 
-// Exports
+// ═══════════════════════════════════════════════════════════════════════════════
+// MODERN MONOCHROME MUSIC PLAYER - REDESIGNED
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const MUSIC_PLAYLIST = [
+    {
+        id: 1,
+        title: "Love Me Not",
+        artist: "Ravyn Lenae",
+        cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7yexjuii7j80F5JjlPzBy5wYLJ2Qdtu9B25GyYR3RS3LPQOPoT1AALUM&s=10",
+        url: "lovemenot.mp3",
+        duration: "3:49"
+    },
+    {
+        id: 2,
+        title: "Heat Waves",
+        artist: "Glass Animals",
+        cover: "https://i.scdn.co/image/ab67616d00001e02712701c5e263efc8726b1464",
+        url: "heatwaves.mp3",
+        duration: "4:22"
+    },
+    {
+        id: 3,
+        title: "Bergema Sampai Selamanya",
+        artist: "Nadhif Basalamah",
+        cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSpA1fRz4jiabOULPHdGeBkXvn_ynMY3e5xomJO7gIqHw&s=10",
+        url: "bergema.mp3",
+        duration: "3:18"
+    },
+    {
+        id: 4,
+        title: "Penjaga Hati",
+        artist: "Nadhif Basalamah",
+        cover: "https://images.genius.com/98e5fb06cfdb1270d2c59dc11d8a002c.1000x1000x1.png",
+        url: "penjagahati.mp3",
+        duration: "4:57"
+    },
+    {
+        id: 5,
+        title: "Kota Ini Tak Sama Tanpamu",
+        artist: "Nadhif Basalamah",
+        cover: "https://images.genius.com/0cb6540c4ab256b862004af058df9bd9.1000x1000x1.png",
+        url: "kotataksama.mp3",
+        duration: "4:32"
+    },
+    {
+        id: 6,
+        title: "Mangu",
+        artist: "Fourtwnty",
+        cover: "https://i.scdn.co/image/ab67616d00001e02fecb2b49d97ed68528fbf44a",
+        url: "mangu.mp3",
+        duration: "4:22"
+    },
+    {
+        id: 7,
+        title: "Tarot",
+        artist: ".Feast",
+        cover: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLL1ux-r2Ohtqstze6Sng6iw_sVZHjclJPQ1FJzBGLWw&s=10",
+        url: "tarot.mp3",
+        duration: "5:06"
+    }
+];
+
+let musicState = {
+    isPlaying: false,
+    currentTrack: 0,
+    currentTime: 0,
+    duration: 0,
+    volume: 0.8,
+    shuffle: false,
+    repeat: false,
+    liked: false
+};
+
+let audioEl = null;
+let progressTimer = null;
+let visualizerTimer = null;
+
+function initMusicPlayer() {
+    audioEl = document.getElementById('audio-player');
+    if (!audioEl) {
+        setTimeout(initMusicPlayer, 300);
+        return;
+    }
+    
+    audioEl.volume = musicState.volume;
+    
+    audioEl.addEventListener('loadedmetadata', () => {
+        musicState.duration = audioEl.duration;
+        updateTimeDisplay();
+    });
+    
+    audioEl.addEventListener('ended', () => {
+        if (musicState.repeat) {
+            audioEl.currentTime = 0;
+            audioEl.play();
+        } else {
+            nextTrack();
+        }
+    });
+    
+    audioEl.addEventListener('error', (e) => {
+        console.error('Audio error:', e);
+        showNotification('Gagal memuat audio', 'error');
+        // Matikan status playing jika error
+        if (musicState.isPlaying) {
+            musicState.isPlaying = false;
+            updatePlayButton(false);
+            document.getElementById('playing-ring')?.classList.remove('active');
+            document.getElementById('album-art')?.classList.remove('playing');
+            document.getElementById('music-indicator')?.classList.add('hidden');
+            document.getElementById('music-btn')?.classList.remove('playing');
+            clearInterval(progressTimer);
+            clearInterval(visualizerTimer);
+        }
+    });
+    
+    createVisualizer();
+    renderPlaylist();
+    loadTrack(0, false);
+}
+
+function createVisualizer() {
+    const vis = document.getElementById('visualizer');
+    if (!vis) return;
+    
+    vis.innerHTML = '';
+    const count = window.innerWidth < 480 ? 12 : 16;
+    
+    for (let i = 0; i < count; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'visualizer-dot';
+        dot.style.height = '4px';
+        vis.appendChild(dot);
+    }
+}
+
+function updateVisualizer() {
+    const dots = document.querySelectorAll('.visualizer-dot');
+    if (!dots.length) return;
+    
+    dots.forEach((dot, i) => {
+        if (musicState.isPlaying) {
+            dot.classList.add('active');
+            // Random height for visualizer effect
+            const h = 4 + Math.random() * 24;
+            dot.style.height = `${h}px`;
+            dot.style.opacity = 0.3 + (h / 32);
+        } else {
+            dot.classList.remove('active');
+            dot.style.height = '4px';
+            dot.style.opacity = 0.4;
+        }
+    });
+}
+
+function renderPlaylist() {
+    const list = document.getElementById('playlist');
+    if (!list) return;
+    
+    list.innerHTML = MUSIC_PLAYLIST.map((track, i) => {
+        const active = i === musicState.currentTrack;
+        
+        return `
+            <div class="playlist-item-mono ${active ? 'active' : ''}" onclick="selectTrack(${i})">
+                <span class="playlist-num-mono">${String(i+1).padStart(2, '0')}</span>
+                <div class="flex-1 min-w-0">
+                    <p class="playlist-title-mono">${track.title}</p>
+                    <p class="playlist-artist-mono">${track.artist}</p>
+                </div>
+                <span class="playlist-dur-mono">${track.duration}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+function openMusicPlayer() {
+    const modal = document.getElementById('music-player-modal');
+    if (!modal) return;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    if (!audioEl) initMusicPlayer();
+    createVisualizer();
+}
+
+function closeMusicPlayer() {
+    const modal = document.getElementById('music-player-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function loadTrack(index, play = false) {
+    if (index < 0 || index >= MUSIC_PLAYLIST.length) return;
+    
+    musicState.currentTrack = index;
+    const track = MUSIC_PLAYLIST[index];
+    
+    // Jika audio belum diinisialisasi, lakukan inisialisasi
+    if (!audioEl) {
+        audioEl = document.getElementById('audio-player');
+        if (!audioEl) {
+            console.error('Audio element not found');
+            return;
+        }
+        audioEl.volume = musicState.volume;
+    }
+    
+    audioEl.src = track.url;
+    audioEl.load();
+    
+    document.getElementById('track-name').textContent = track.title;
+    document.getElementById('track-artist').textContent = track.artist;
+    document.getElementById('total-time').textContent = track.duration;
+    document.getElementById('album-art').src = track.cover;
+    
+    musicState.currentTime = 0;
+    updateProgress();
+    updatePlayButton(false);
+    
+    document.getElementById('playing-ring')?.classList.remove('active');
+    document.getElementById('album-art')?.classList.remove('playing');
+    
+    renderPlaylist();
+    
+    if (play) {
+        // Gunakan setTimeout untuk memastikan metadata sudah dimuat
+        setTimeout(() => togglePlay(), 200);
+    }
+}
+
+function togglePlay() {
+    if (!audioEl || !audioEl.src) {
+        loadTrack(0, true);
+        return;
+    }
+    
+    const btn = document.getElementById('play-btn');
+    const playingRing = document.getElementById('playing-ring');
+    const albumArt = document.getElementById('album-art');
+    const musicIndicator = document.getElementById('music-indicator');
+    const musicBtn = document.getElementById('music-btn');
+    const visualizer = document.querySelector('.visualizer-mono');
+    
+    if (musicState.isPlaying) {
+        // PAUSE
+        audioEl.pause();
+        musicState.isPlaying = false;
+        clearInterval(progressTimer);
+        clearInterval(visualizerTimer);
+        
+        updatePlayButton(false);
+        if (playingRing) playingRing.classList.remove('active');
+        if (albumArt) albumArt.classList.remove('playing');
+        if (visualizer) visualizer.classList.remove('playing');
+        if (musicIndicator) musicIndicator.classList.add('hidden');
+        if (musicBtn) musicBtn.classList.remove('playing');
+        
+    } else {
+        // PLAY
+        audioEl.play().then(() => {
+            musicState.isPlaying = true;
+            
+            // Bersihkan interval lama jika ada
+            if (progressTimer) clearInterval(progressTimer);
+            if (visualizerTimer) clearInterval(visualizerTimer);
+            
+            progressTimer = setInterval(updateProgress, 100);
+            visualizerTimer = setInterval(updateVisualizer, 80);
+            
+            updatePlayButton(true);
+            if (playingRing) playingRing.classList.add('active');
+            if (albumArt) albumArt.classList.add('playing');
+            if (visualizer) visualizer.classList.add('playing');
+            if (musicIndicator) musicIndicator.classList.remove('hidden');
+            if (musicBtn) musicBtn.classList.add('playing');
+            
+            renderPlaylist();
+        }).catch((error) => {
+            console.error('Playback error:', error);
+            showNotification('Tidak dapat memutar audio', 'error');
+        });
+    }
+}
+
+function updatePlayButton(playing) {
+    const btn = document.getElementById('play-btn');
+    if (!btn) return;
+    
+    if (playing) {
+        btn.classList.add('playing');
+    } else {
+        btn.classList.remove('playing');
+    }
+}
+
+function updateProgress() {
+    if (!audioEl) return;
+    
+    musicState.currentTime = audioEl.currentTime;
+    musicState.duration = audioEl.duration || 0;
+    
+    const progressFill = document.getElementById('progress-fill');
+    const currentTimeEl = document.getElementById('current-time');
+    const totalTimeEl = document.getElementById('total-time');
+    
+    if (progressFill && musicState.duration > 0) {
+        const pct = (musicState.currentTime / musicState.duration) * 100;
+        progressFill.style.width = `${pct}%`;
+    }
+    
+    if (currentTimeEl) {
+        currentTimeEl.textContent = formatTime(musicState.currentTime);
+    }
+    
+    if (totalTimeEl && musicState.duration > 0) {
+        totalTimeEl.textContent = formatTime(musicState.duration);
+    }
+}
+
+function updateTimeDisplay() {
+    const totalTimeEl = document.getElementById('total-time');
+    if (totalTimeEl && musicState.duration > 0) {
+        totalTimeEl.textContent = formatTime(musicState.duration);
+    }
+}
+
+function seekMusic(e) {
+    if (!audioEl || !musicState.duration) return;
+    
+    const bar = e.currentTarget;
+    const rect = bar.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    
+    audioEl.currentTime = pct * musicState.duration;
+    updateProgress();
+}
+
+function nextTrack() {
+    let next;
+    if (musicState.shuffle) {
+        do {
+            next = Math.floor(Math.random() * MUSIC_PLAYLIST.length);
+        } while (next === musicState.currentTrack && MUSIC_PLAYLIST.length > 1);
+    } else {
+        next = (musicState.currentTrack + 1) % MUSIC_PLAYLIST.length;
+    }
+    loadTrack(next, musicState.isPlaying);
+}
+
+function previousTrack() {
+    // Jika lagu sudah berjalan > 3 detik, restart ke awal
+    if (musicState.currentTime > 3) {
+        audioEl.currentTime = 0;
+        updateProgress();
+        return;
+    }
+    
+    let prev;
+    if (musicState.shuffle) {
+        do {
+            prev = Math.floor(Math.random() * MUSIC_PLAYLIST.length);
+        } while (prev === musicState.currentTrack && MUSIC_PLAYLIST.length > 1);
+    } else {
+        prev = (musicState.currentTrack - 1 + MUSIC_PLAYLIST.length) % MUSIC_PLAYLIST.length;
+    }
+    loadTrack(prev, musicState.isPlaying);
+}
+
+function selectTrack(index) {
+    if (index === musicState.currentTrack) {
+        // Jika track sama, toggle play/pause
+        togglePlay();
+    } else {
+        loadTrack(index, true);
+    }
+}
+
+function toggleShuffle() {
+    musicState.shuffle = !musicState.shuffle;
+    const btn = document.getElementById('shuffle-btn');
+    if (btn) {
+        if (musicState.shuffle) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
+    showNotification(musicState.shuffle ? 'Shuffle aktif' : 'Shuffle nonaktif', 'info');
+}
+
+function toggleRepeat() {
+    musicState.repeat = !musicState.repeat;
+    const btn = document.getElementById('repeat-btn');
+    if (btn) {
+        if (musicState.repeat) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
+    showNotification(musicState.repeat ? 'Repeat aktif' : 'Repeat nonaktif', 'info');
+}
+
+function toggleLike() {
+    musicState.liked = !musicState.liked;
+    const btn = document.getElementById('like-btn');
+    if (btn) {
+        if (musicState.liked) {
+            btn.classList.add('liked');
+            btn.innerHTML = '<i class="ri-heart-3-fill"></i>';
+        } else {
+            btn.classList.remove('liked');
+            btn.innerHTML = '<i class="ri-heart-3-line"></i>';
+        }
+    }
+    showNotification(musicState.liked ? 'Ditambahkan ke favorites' : 'Dihapus dari favorites', 'info');
+}
+
+function formatTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Event listeners untuk modal
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('music-player-modal');
+    if (e.target === modal) closeMusicPlayer();
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMusicPlayer();
+});
+
+window.addEventListener('resize', () => {
+    const modal = document.getElementById('music-player-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+        createVisualizer();
+    }
+});
+
+// Ekspor fungsi ke global scope
+window.openMusicPlayer = openMusicPlayer;
+window.closeMusicPlayer = closeMusicPlayer;
+window.togglePlay = togglePlay;
+window.nextTrack = nextTrack;
+window.previousTrack = previousTrack;
+window.selectTrack = selectTrack;
+window.seekMusic = seekMusic;
+window.toggleShuffle = toggleShuffle;
+window.toggleRepeat = toggleRepeat;
+window.toggleLike = toggleLike;
+
+// Export moon mission functions
 window.resetMoonMissionState = resetMoonMissionState;
 window.initMoonMission = initMoonMission;
 window.openMoonMissionModal = openMoonMissionModal;
@@ -3556,3 +4594,4 @@ window.closeMoonMissionModal = closeMoonMissionModal;
 window.claimMoonReward = claimMoonReward;
 window.copyRedeemCode = copyRedeemCode;
 window.showRedeemCodeView = showRedeemCodeView;
+
