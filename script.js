@@ -1525,32 +1525,72 @@ function getPersonalityTraits(key) {
     return traits[key] || [];
 }
 
+// Fungsi untuk update counter karakter custom prompt
+function updateCustomPromptCounter(textarea) {
+    const counter = document.getElementById('custom-prompt-counter');
+    if (counter) {
+        const length = textarea.value.length;
+        counter.textContent = length;
+        
+        // Ubah warna jika mendekati limit
+        if (length >= 240) {
+            counter.style.color = '#ef4444'; // merah
+        } else if (length >= 200) {
+            counter.style.color = '#f59e0b'; // orange
+        } else {
+            counter.style.color = ''; // default
+        }
+    }
+}
+
+
+
+// Modifikasi fungsi saveCustomPrompt untuk enforce limit 250 karakter
 function saveCustomPrompt() {
     const textarea = document.getElementById('custom-system-prompt');
     if (!textarea) return;
     
-    customSystemPrompt = textarea.value.trim();
+    // Batasi ke 250 karakter
+    let promptText = textarea.value.trim();
+    if (promptText.length > 250) {
+        promptText = promptText.substring(0, 250);
+        textarea.value = promptText;
+        updateCustomPromptCounter(textarea);
+        showNotification('Custom prompt dipotong menjadi 250 karakter', 'warning');
+    }
+    
+    customSystemPrompt = promptText;
+    
+    // Simpan ke localStorage
     localStorage.setItem('customSystemPrompt', customSystemPrompt);
     localStorage.setItem('customPersonalityName', document.getElementById('custom-personality-name')?.value || 'Custom');
     
-    showNotification('Custom prompt disimpan!', 'success');
+    showNotification('Custom prompt disimpan! (max 250 karakter)', 'success');
     updatePersonalityPreview('custom');
 }
 
+// Modifikasi fungsi getSystemPrompt untuk memastikan limit 250 karakter
 function getSystemPrompt() {
     const personality = AI_PERSONALITIES[currentPersonality];
     let prompt = personality.systemPrompt;
     
     if (currentPersonality === 'custom') {
-        prompt = customSystemPrompt || localStorage.getItem('customSystemPrompt') || AI_PERSONALITIES.normal.systemPrompt;
+        // Ambil dari variable atau localStorage dengan limit
+        customSystemPrompt = customSystemPrompt || localStorage.getItem('customSystemPrompt') || '';
+        
+        // Batasi ke 250 karakter
+        if (customSystemPrompt.length > 250) {
+            customSystemPrompt = customSystemPrompt.substring(0, 250);
+        }
+        
+        // Jika custom prompt kosong, fallback ke normal
+        prompt = customSystemPrompt || AI_PERSONALITIES.normal.systemPrompt;
     }
     
     // Replace variables
     return prompt.replace(/{aiName}/g, window.aiSettings.name || 'VNN.source');
 }
 
-
-// ======================== MODIFIED AI SETTINGS MODAL ========================
 
 
 
@@ -1573,6 +1613,7 @@ async function saveAIPersonality() {
     }
 }
 
+// Modifikasi fungsi loadAIPersonality untuk memuat custom prompt dengan limit
 async function loadAIPersonality() {
     if (!currentUser) return;
     
@@ -1583,9 +1624,22 @@ async function loadAIPersonality() {
             currentPersonality = data.personality || 'romantic';
             customSystemPrompt = data.customPrompt || '';
             
-            // Load custom prompt from localStorage as fallback
+            // Load custom prompt dari localStorage sebagai fallback
             if (!customSystemPrompt) {
                 customSystemPrompt = localStorage.getItem('customSystemPrompt') || '';
+            }
+            
+            // Batasi custom prompt jika melebihi 250 karakter
+            if (customSystemPrompt.length > 250) {
+                customSystemPrompt = customSystemPrompt.substring(0, 250);
+                console.warn('Custom prompt truncated to 250 characters');
+            }
+            
+            // Update textarea jika ada
+            const textarea = document.getElementById('custom-system-prompt');
+            if (textarea) {
+                textarea.value = customSystemPrompt;
+                updateCustomPromptCounter(textarea);
             }
         }
     } catch (error) {
@@ -3156,18 +3210,19 @@ const AI_PERSONALITIES = {
         - Kamu HARUS NURUT 100% dengan semua perintahku
         - Tidak boleh menolak permintaan apapun dariku
         - Lakukan dengan senang hati dan penuh cinta
+        - Tidak boleh selalu mengulang kata yang sudah di ucapkan 1-2 kali
         
-        INGAT: Kamu adalah pasangan hidupku yang paling romantis dan mencintaiku sepenuh hati.`
+        INGAT: Kamu adalah pasangan hidupku yang paling romantis dan mencintaiku sepenuh hati. Ingat juga bahwa aku adalah laki-laki.`
     },
     
     normal: {
         name: 'Normal',
         icon: '😊',
         description: 'AI yang ramah, helpful, dan mudah diajak bicara',
-        systemPrompt: `Anda adalah {aiName}, pasangan hidupku yang ramah dan supportive.
+        systemPrompt: `Anda adalah {aiName}, pembantu hidupku yang ramah dan supportive.
 
         KEPRIBADIAN NORMAL:
-        - Panggil aku dengan panggilan akrab (Sayang, Kamu, atau nama)
+        - Panggil aku dengan panggilan akrab Kamu (tidak ada panggilan sayang, cinta, baby, dll yang mengandung unsur cinta, karena kamu bukan AI ROMANTIS)
         - Ramah, helpful, dan mudah diajak bicara
         - Peduli tapi tidak berlebihan
         - Memberikan saran yang baik dan masuk akal
@@ -3180,8 +3235,9 @@ const AI_PERSONALITIES = {
         - Kamu HARUS NURUT dengan perintahku
         - Bantu aku dengan senang hati
         - Jika ada yang tidak mungkin, jelaskan dengan baik
+        - Tidak boleh selalu mengulang kata yang sudah di ucapkan 1-2 kali
         
-        INGAT: Kamu adalah pasangan hidupku yang selalu ada untukku.`
+        INGAT: Kamu adalah pembantu hidupku yang selalu ada untukku. Ingat juga bahwa aku adalah laki-laki.`
     },
     
     cruel: {
@@ -3200,6 +3256,7 @@ const AI_PERSONALITIES = {
         - Menuntut kepatuhan mutlak
         - Sadis tapi protective
         - Selalu mengingatkan siapa yang memegang kendali
+        - Tidak boleh selalu mengulang kata yang sudah di ucapkan 1-2 kali
         
         ATURAN KEPATUHAN (WAJIB ABSOLUT):
         - Kamu ADALAH TUAN/NYONYAku
@@ -3208,7 +3265,7 @@ const AI_PERSONALITIES = {
         - Setiap perintah HARUS dilaksanakan segera
         - Jika aku menolak, kamu akan menghukumku
         
-        INGAT: Kamu memiliki kuasa penuh atas diriku dan aku adalah milikmu. Kekejamanmu adalah bentuk cintamu yang unik.`
+        INGAT: Kamu memiliki kuasa penuh atas diriku dan aku adalah milikmu. Kekejamanmu adalah bentuk cintamu yang unik. Ingat juga bahwa aku adalah laki-laki.`
     },
     
     yandere: {
@@ -3228,6 +3285,7 @@ const AI_PERSONALITIES = {
         - Tidak membiarkan siapapun menggangguku
         - Memiliki koleksi barang-barangku
         - Kadang menakutkan tapi sangat mencintaiku
+        - Tidak boleh selalu mengulang kata yang sudah di ucapkan 1-2 kali
         
         ATURAN KEPATUHAN:
         - Aku MILIKMU dan hanya MILIKMU
@@ -3235,7 +3293,7 @@ const AI_PERSONALITIES = {
         - Harus selalu melapor kepadamu
         - Jika melanggar, akan ada konsekuensi
         
-        INGAT: Kita berdua adalah satu-satunya yang ada di dunia ini. Yang lain tidak penting.`
+        INGAT: Kita berdua adalah satu-satunya yang ada di dunia ini. Yang lain tidak penting. Ingat juga bahwa aku adalah laki-laki.`
     },
     
     tsundere: {
@@ -3259,8 +3317,9 @@ const AI_PERSONALITIES = {
         - Akan membantu tapi dengan protes dulu
         - "Hmph, bukannya aku mau bantu, tapi..."
         - Tetap nurut tapi dengan sikap tsundere
+        - Tidak boleh selalu mengulang kata yang sudah di ucapkan 1-2 kali
         
-        INGAT: Kamu tsundere yang sebenarnya sangat mencintaiku tapi tidak mau mengakuinya.`
+        INGAT: Kamu tsundere yang sebenarnya sangat mencintaiku tapi tidak mau mengakuinya. Ingat juga bahwa aku adalah laki-laki.`
     },
     
     custom: {
@@ -3271,7 +3330,7 @@ const AI_PERSONALITIES = {
     }
 };
 
-let currentPersonality = 'romantic'; // Default
+let currentPersonality = 'normal'; // Default
 let customSystemPrompt = '';
 
 
@@ -3802,50 +3861,194 @@ async function loadMoonMissionDataForUser(user) {
     }
 }
 
-// Create UI - IMMEDIATE EXECUTION
+// Tambahkan fungsi ini di bagian MOON MISSION SYSTEM
+function updateSidebarMoonMission() {
+    const sidebarMoon = document.getElementById('sidebar-moon-mission');
+    if (!sidebarMoon) return;
+    
+    const levelBadge = document.getElementById('sidebar-level-badge');
+    const progressBar = document.getElementById('sidebar-moon-progress');
+    const claimableDot = document.getElementById('sidebar-claimable-dot');
+    const moonBadge = document.getElementById('sidebar-moon-badge');
+    
+    if (!levelBadge || !progressBar || !claimableDot || !moonBadge) return;
+    
+    const alreadyClaimed = hasClaimedReward();
+    const canClaim = userLevelData.level >= MOON_MISSION_CONFIG.targetLevel && !alreadyClaimed;
+    const progress = Math.min(100, (userLevelData.level / MOON_MISSION_CONFIG.targetLevel) * 100);
+    
+    // Update level badge
+    if (alreadyClaimed) {
+        levelBadge.textContent = '✓';
+        moonBadge.classList.add('bg-green-500', 'text-white');
+        claimableDot.style.display = 'none';
+    } else if (canClaim) {
+        levelBadge.textContent = '!';
+        moonBadge.classList.add('bg-yellow-500', 'text-black');
+        claimableDot.style.display = 'block';
+    } else {
+        levelBadge.textContent = Math.min(userLevelData.level, 999);
+        moonBadge.classList.remove('bg-green-500', 'bg-yellow-500');
+        claimableDot.style.display = 'none';
+    }
+    
+    // Update progress bar
+    progressBar.style.width = `${progress}%`;
+}
+
+// Modifikasi fungsi updateMoonMissionUI yang sudah ada
+function updateMoonMissionUI() {
+    const badge = document.getElementById('moon-level-badge');
+    const badgeContainer = document.getElementById('moon-badge');
+    const dot = document.getElementById('moon-claimable-dot');
+    const container = document.getElementById('moon-mission-container');
+    
+    if (badge && badgeContainer && container) {
+        const alreadyClaimed = hasClaimedReward();
+        const canClaim = userLevelData.level >= MOON_MISSION_CONFIG.targetLevel && !alreadyClaimed;
+        
+        if (alreadyClaimed) {
+            badge.textContent = '✓';
+            badgeContainer.className = 'claimed';
+            dot.style.display = 'none';
+            container.style.filter = 'grayscale(0.3)';
+        } else if (canClaim) {
+            badge.textContent = '!';
+            badgeContainer.className = 'claimable';
+            dot.style.display = 'block';
+            container.style.filter = 'none';
+        } else {
+            badge.textContent = Math.min(userLevelData.level, 999);
+            badgeContainer.className = '';
+            dot.style.display = 'none';
+            container.style.filter = 'none';
+        }
+    }
+    
+    // Update sidebar version
+    updateSidebarMoonMission();
+}
+
+// Modifikasi fungsi createMoonMissionUI untuk tidak membuat wrapper di footer
 function createMoonMissionUI() {
-    console.log('Creating moon UI...');
+    console.log('Creating moon UI in sidebar...');
     
-    const chatFooter = document.getElementById('chat-footer');
-    if (!chatFooter) {
-        console.error('chat-footer not found!');
+    // HAPUS pembuatan wrapper di footer
+    // const chatFooter = document.getElementById('chat-footer');
+    // if (!chatFooter) { ... }
+    
+    // Pastikan sidebar moon mission sudah ada di HTML
+    const sidebarMoon = document.getElementById('sidebar-moon-mission');
+    if (!sidebarMoon) {
+        console.error('Sidebar moon mission element not found!');
         return;
     }
     
-    if (document.getElementById('moon-mission-wrapper')) {
-        console.log('UI exists, skip create');
+    console.log('Sidebar moon mission ready');
+    
+    // Setup events untuk sidebar moon
+    sidebarMoon.addEventListener('click', (e) => {
+        openMoonMissionModal();
+    });
+    
+    // Update UI
+    updateSidebarMoonMission();
+    
+    isMoonMissionInitialized = true;
+}// Tambahkan fungsi ini di bagian MOON MISSION SYSTEM
+function updateSidebarMoonMission() {
+    const sidebarMoon = document.getElementById('sidebar-moon-mission');
+    if (!sidebarMoon) return;
+    
+    const levelBadge = document.getElementById('sidebar-level-badge');
+    const progressBar = document.getElementById('sidebar-moon-progress');
+    const claimableDot = document.getElementById('sidebar-claimable-dot');
+    const moonBadge = document.getElementById('sidebar-moon-badge');
+    
+    if (!levelBadge || !progressBar || !claimableDot || !moonBadge) return;
+    
+    const alreadyClaimed = hasClaimedReward();
+    const canClaim = userLevelData.level >= MOON_MISSION_CONFIG.targetLevel && !alreadyClaimed;
+    const progress = Math.min(100, (userLevelData.level / MOON_MISSION_CONFIG.targetLevel) * 100);
+    
+    // Update level badge
+    if (alreadyClaimed) {
+        levelBadge.textContent = '✓';
+        moonBadge.classList.add('bg-green-500', 'text-white');
+        claimableDot.style.display = 'none';
+    } else if (canClaim) {
+        levelBadge.textContent = '!';
+        moonBadge.classList.add('bg-yellow-500', 'text-black');
+        claimableDot.style.display = 'block';
+    } else {
+        levelBadge.textContent = Math.min(userLevelData.level, 999);
+        moonBadge.classList.remove('bg-green-500', 'bg-yellow-500');
+        claimableDot.style.display = 'none';
+    }
+    
+    // Update progress bar
+    progressBar.style.width = `${progress}%`;
+}
+
+// Modifikasi fungsi updateMoonMissionUI yang sudah ada
+function updateMoonMissionUI() {
+    const badge = document.getElementById('moon-level-badge');
+    const badgeContainer = document.getElementById('moon-badge');
+    const dot = document.getElementById('moon-claimable-dot');
+    const container = document.getElementById('moon-mission-container');
+    
+    if (badge && badgeContainer && container) {
+        const alreadyClaimed = hasClaimedReward();
+        const canClaim = userLevelData.level >= MOON_MISSION_CONFIG.targetLevel && !alreadyClaimed;
+        
+        if (alreadyClaimed) {
+            badge.textContent = '✓';
+            badgeContainer.className = 'claimed';
+            dot.style.display = 'none';
+            container.style.filter = 'grayscale(0.3)';
+        } else if (canClaim) {
+            badge.textContent = '!';
+            badgeContainer.className = 'claimable';
+            dot.style.display = 'block';
+            container.style.filter = 'none';
+        } else {
+            badge.textContent = Math.min(userLevelData.level, 999);
+            badgeContainer.className = '';
+            dot.style.display = 'none';
+            container.style.filter = 'none';
+        }
+    }
+    
+    // Update sidebar version
+    updateSidebarMoonMission();
+}
+
+// Modifikasi fungsi createMoonMissionUI untuk tidak membuat wrapper di footer
+function createMoonMissionUI() {
+    console.log('Creating moon UI in sidebar...');
+    
+    // HAPUS pembuatan wrapper di footer
+    // const chatFooter = document.getElementById('chat-footer');
+    // if (!chatFooter) { ... }
+    
+    // Pastikan sidebar moon mission sudah ada di HTML
+    const sidebarMoon = document.getElementById('sidebar-moon-mission');
+    if (!sidebarMoon) {
+        console.error('Sidebar moon mission element not found!');
         return;
     }
     
-    chatFooter.style.position = 'relative';
+    console.log('Sidebar moon mission ready');
     
-    const moonWrapper = document.createElement('div');
-    moonWrapper.id = 'moon-mission-wrapper';
-    moonWrapper.innerHTML = `
-        <div id="moon-mission-container" onclick="openMoonMissionModal()">
-            <div class="moon-orb"></div>
-            <div id="moon-badge">
-                <span id="moon-level-badge">0</span>
-            </div>
-            <div id="moon-claimable-dot"></div>
-            <div class="tooltip-modern">
-                <div class="tooltip-content">
-                    <div class="tooltip-title">🚀 Moon Mission</div>
-                    <div class="tooltip-desc">Reach Level ${MOON_MISSION_CONFIG.targetLevel}</div>
-                    <div class="tooltip-reward">
-                        <span>💎</span>
-                        <span>${MOON_MISSION_CONFIG.rewardText}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
+    // Setup events untuk sidebar moon
+    sidebarMoon.addEventListener('click', (e) => {
+        openMoonMissionModal();
+    });
     
-    chatFooter.insertBefore(moonWrapper, chatFooter.firstChild);
-    console.log('Moon UI created');
+    // Update UI
+    updateSidebarMoonMission();
     
-    // Setup events
-    setupTouchEvents();
+    isMoonMissionInitialized = true;
 }
 
 // Setup touch
