@@ -188,6 +188,9 @@ async function loadUserLevelData() {
             await saveUserLevelData();
         }
         
+// Load love level
+await loadLoveLevel();
+        
         // Update UI dan tampilkan container
         updateLevelUI();
         
@@ -2825,6 +2828,9 @@ async function sendMessage() {
     const lastMessageTime = userLevelData.lastMessageTime ? new Date(userLevelData.lastMessageTime).getTime() : 0;
     const cooldownMs = 2000; // 2 detik cooldown
     
+// Love Level System - Update setiap kali kirim pesan
+await updateLoveLevel();
+    
     if (now - lastMessageTime < cooldownMs) {
         showNotification(`Tunggu ${Math.ceil((cooldownMs - (now - lastMessageTime)) / 1000)} detik sebelum mengirim lagi`, 'warning');
         return;
@@ -4798,3 +4804,330 @@ window.claimMoonReward = claimMoonReward;
 window.copyRedeemCode = copyRedeemCode;
 window.showRedeemCodeView = showRedeemCodeView;
 
+// ======================== LOVE LEVEL SYSTEM (LIKE TIKTOK) - FIXED VERSION ========================
+// 1 chat = level 1, 10 chat = level 2, 20 chat = level 3, dst.
+
+let loveLevelData = {
+    level: 0,           // Level love (0 = belum ada chat)
+    isLit: false,       // Apakah love sedang menyala
+    lastLitTime: null,  // Terakhir kali love menyala
+    totalChats: 0       // Total chat untuk menentukan level
+};
+
+// Load love level dari Firestore
+async function loadLoveLevel() {
+    if (!currentUser) return;
+    
+    try {
+        const doc = await db.collection('users').doc(currentUser.uid).collection('stats').doc('loveLevel').get();
+        if (doc.exists) {
+            const data = doc.data();
+            loveLevelData = {
+                level: data.level || 0,
+                isLit: data.isLit || false,
+                lastLitTime: data.lastLitTime?.toDate() || null,
+                totalChats: data.totalChats || 0
+            };
+        } else {
+            // Initialize new user
+            loveLevelData = {
+                level: 0,
+                isLit: false,
+                lastLitTime: null,
+                totalChats: 0
+            };
+            await saveLoveLevel();
+        }
+        
+        updateLoveLevelUI();
+    } catch (error) {
+        console.error('Error loading love level:', error);
+    }
+}
+
+// Simpan love level ke Firestore
+async function saveLoveLevel() {
+    if (!currentUser) return;
+    
+    try {
+        await db.collection('users').doc(currentUser.uid).collection('stats').doc('loveLevel').set({
+            level: loveLevelData.level,
+            isLit: loveLevelData.isLit,
+            lastLitTime: loveLevelData.lastLitTime,
+            totalChats: loveLevelData.totalChats
+        }, { merge: true });
+    } catch (error) {
+        console.error('Error saving love level:', error);
+    }
+}
+
+// Update love level berdasarkan chat
+async function updateLoveLevel() {
+    if (!currentUser) {
+        console.log('No user, skipping love level update');
+        return false;
+    }
+    
+    console.log('Updating love level. Current state:', loveLevelData);
+    
+    // Increment total chats
+    loveLevelData.totalChats++;
+    
+    // Hitung level baru:
+    // 1 chat = level 1
+    // 10 chat = level 2  
+    // 20 chat = level 3
+    // 30 chat = level 4, dst.
+    let newLevel;
+    if (loveLevelData.totalChats === 1) {
+        newLevel = 1; // Chat pertama langsung level 1
+    } else {
+        newLevel = Math.floor(loveLevelData.totalChats / 10) + 1;
+        // Contoh: 
+        // totalChats=10 -> floor(10/10)=1 +1 = level 2
+        // totalChats=20 -> floor(20/10)=2 +1 = level 3
+        // totalChats=21 -> floor(21/10)=2 +1 = level 3
+    }
+    
+    const previousLevel = loveLevelData.level;
+    const wasLit = loveLevelData.isLit;
+    
+    // Update level
+    loveLevelData.level = newLevel;
+    
+    // Jika total chats > 0, love harus menyala
+    if (loveLevelData.totalChats > 0) {
+        loveLevelData.isLit = true;
+    }
+    
+    console.log(`Total chats: ${loveLevelData.totalChats}, New level: ${newLevel}, previous: ${previousLevel}, isLit: ${loveLevelData.isLit}`);
+    
+    // Simpan perubahan
+    await saveLoveLevel();
+    
+    // Update UI
+    updateLoveLevelUI();
+    
+    // Jika naik level, tampilkan animasi dan notifikasi
+    if (newLevel > previousLevel) {
+        console.log('Level up! Showing animation');
+        animateLoveIcon();
+        showLoveNotification(newLevel);
+    } 
+    // Jika pertama kali love menyala (dari 0 ke >0)
+    else if (!wasLit && loveLevelData.isLit) {
+        console.log('First time love lit!');
+        animateLoveIcon();
+    }
+    
+    return true;
+}
+
+// Update UI untuk love level (HANYA icon dan angka, tanpa background)
+function updateLoveLevelUI() {
+    const navbarAIName = document.getElementById('navbar-ai-name');
+    if (!navbarAIName) return;
+    
+    // Cek apakah container love sudah ada
+    let loveContainer = document.getElementById('love-level-container');
+    
+    if (!loveContainer) {
+        // Buat container baru tanpa background
+        loveContainer = document.createElement('div');
+        loveContainer.id = 'love-level-container';
+        loveContainer.className = 'flex items-center gap-0.5 ml-1 relative';
+        navbarAIName.parentNode.insertBefore(loveContainer, navbarAIName.nextSibling);
+    }
+    
+    // Debug log
+    console.log('Updating UI with loveLevelData:', loveLevelData);
+    
+    // Tentukan tampilan berdasarkan level
+    const level = loveLevelData.level;
+    const isLit = loveLevelData.totalChats > 0; // Love menyala jika sudah ada chat
+    
+    if (isLit) {
+        // Jika love menyala (sudah pernah chat), tampilkan love pink + angka level
+        const loveStyle = getLoveStyle(level);
+        
+        loveContainer.innerHTML = `
+            <div class="relative group cursor-pointer" onclick="triggerLoveAnimation()">
+                <div class="flex items-center gap-0.5">
+                    <div class="love-icon-wrapper" data-level="${Math.floor(level / 10) * 10}">
+                        <svg class="w-4 h-4 ${loveStyle.color} transition-all duration-300 love-icon" 
+                             fill="currentColor" 
+                             viewBox="0 0 24 24">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold love-level-number ${loveStyle.numberColor}">${level}</span>
+                </div>
+                
+                <!-- Hover tooltip (optional, hanya muncul saat hover) -->
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                    <div class="bg-gray-900/90 backdrop-blur-sm border border-white/10 rounded-lg px-2 py-1 text-[10px] whitespace-nowrap text-gray-300">
+                        Level ${level} • ${loveLevelData.totalChats} chats
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        // Jika love mati (belum pernah chat), tampilkan love abu-abu tanpa angka
+        loveContainer.innerHTML = `
+            <div class="relative group cursor-pointer" onclick="triggerFirstLove()">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 text-gray-500 transition-all duration-300 hover:text-pink-400 love-icon-off" 
+                         fill="none" 
+                         stroke="currentColor" 
+                         viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
+                              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                </div>
+                
+                <!-- Hover tooltip -->
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                    <div class="bg-gray-900/90 backdrop-blur-sm border border-white/10 rounded-lg px-2 py-1 text-[10px] whitespace-nowrap text-gray-300">
+                        Kirim 1 pesan untuk love level 1
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Dapatkan style love berdasarkan level (setiap 10 level berganti)
+function getLoveStyle(level) {
+    const levelGroup = Math.floor(level / 10) * 10;
+    
+    const styles = {
+        0: { color: 'text-pink-400', numberColor: 'text-pink-400' },
+        10: { color: 'text-pink-500 animate-pulse-love', numberColor: 'text-pink-500' },
+        20: { color: 'text-pink-500 animate-bounce-love', numberColor: 'text-pink-500' },
+        30: { color: 'text-pink-500 animate-sparkle', numberColor: 'text-pink-500' },
+        40: { color: 'text-pink-500 animate-heartbeat', numberColor: 'text-pink-500 font-bold' },
+        50: { color: 'text-pink-500 animate-float-love', numberColor: 'text-pink-500 font-bold' },
+        60: { color: 'text-pink-500 animate-glow-pink', numberColor: 'text-pink-500 font-bold' },
+        70: { color: 'text-pink-500 animate-rainbow', numberColor: 'text-pink-500 font-bold' },
+        80: { color: 'text-pink-500 animate-super-love', numberColor: 'text-pink-500 font-extrabold' },
+        90: { color: 'text-pink-500 animate-super-love', numberColor: 'text-pink-500 font-extrabold' }
+    };
+    
+    // Cari style yang paling mendekati
+    let selectedStyle = styles[0];
+    for (let key in styles) {
+        if (level >= parseInt(key)) {
+            selectedStyle = styles[key];
+        }
+    }
+    
+    return selectedStyle;
+}
+
+// Animasi love icon saat menyala
+function animateLoveIcon() {
+    const loveIcon = document.querySelector('.love-icon');
+    if (!loveIcon) return;
+    
+    // Tambahkan class animasi
+    loveIcon.classList.add('animate-love-pop');
+    
+    // Buat efek partikel kecil
+    createLoveParticles();
+    
+    // Hapus class setelah animasi selesai
+    setTimeout(() => {
+        loveIcon.classList.remove('animate-love-pop');
+    }, 500);
+}
+
+// Animasi untuk love pertama kali
+function triggerFirstLove() {
+    if (loveLevelData.totalChats === 0) {
+        showLoveNotification(0, false);
+    }
+}
+
+function showLoveNotification(level, isFirst = false) {
+    const notif = document.createElement('div');
+    notif.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50';
+    
+    if (isFirst) {
+        notif.innerHTML = `
+            <div class="text-pink-400 text-lg font-bold animate-love-first hidden">
+                ❤️ Kirim pesan untuk menyalakan love
+            </div>
+        `;
+    } else {
+        notif.innerHTML = `
+            <div class="text-pink-400 text-xl font-bold animate-love-level-up hidden">
+                ❤️ Love Level ${level}!
+            </div>
+        `;
+    }
+    
+    document.body.appendChild(notif);
+    
+    setTimeout(() => {
+        notif.style.opacity = '0';
+        notif.style.transform = 'translate(-50%, -80%)';
+        notif.style.transition = 'all 0.5s ease';
+        setTimeout(() => notif.remove(), 500);
+    }, 1500);
+}
+
+// Trigger animasi manual (saat diklik)
+function triggerLoveAnimation() {
+    const loveIcon = document.querySelector('.love-icon');
+    if (loveIcon) {
+        loveIcon.classList.add('animate-love-pulse');
+        setTimeout(() => {
+            loveIcon.classList.remove('animate-love-pulse');
+        }, 300);
+    }
+}
+
+// Buat efek partikel love
+function createLoveParticles() {
+    const container = document.getElementById('love-level-container');
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            const particle = document.createElement('div');
+            particle.className = 'love-particle fixed pointer-events-none z-50';
+            particle.innerHTML = '❤️';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.fontSize = '12px';
+            particle.style.opacity = '1';
+            particle.style.transform = 'translate(-50%, -50%)';
+            particle.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            document.body.appendChild(particle);
+            
+            // Random direction
+            const angle = (i / 5) * Math.PI * 2;
+            const distance = 30 + Math.random() * 20;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance - 20;
+            
+            setTimeout(() => {
+                particle.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
+                particle.style.opacity = '0';
+            }, 10);
+            
+            setTimeout(() => particle.remove(), 800);
+        }, i * 50);
+    }
+}
+
+
+// Ekspor fungsi ke global
+window.loadLoveLevel = loadLoveLevel;
+window.updateLoveLevel = updateLoveLevel;
+window.triggerLoveAnimation = triggerLoveAnimation;
+window.triggerFirstLove = triggerFirstLove;
