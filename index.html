@@ -16,6 +16,320 @@
 <!-- Tambahkan untuk audio player -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
 <style>
+
+/* Tambahkan di bagian style */
+#send-btn:disabled,
+#send-btn.loading {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    transform: none !important;
+}
+
+#user-input:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Animasi loading yang lebih halus */
+@keyframes button-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+#send-btn.loading {
+    animation: button-pulse 1.5s infinite;
+}
+
+/* Modern Sidebar Styles */
+#sidebar {
+    background: linear-gradient(180deg, #0A0A0A 0%, #050505 100%);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Smooth transitions untuk semua elemen */
+#sidebar * {
+    transition: all 0.2s ease;
+}
+
+/* User Info Hover Effects */
+#user-info .group:hover img {
+    transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Moon Mission Hover Effects */
+#sidebar-moon-mission:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px -10px rgba(139, 92, 246, 0.3);
+}
+
+#sidebar-moon-mission:hover .w-10.h-10 {
+    transform: scale(1.05);
+}
+
+/* Status Badge Animation */
+@keyframes pulse-subtle {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+#user-info .bg-green-500 {
+    animation: pulse-subtle 2s infinite;
+}
+
+/* Gradient Text */
+.gradient-text {
+    background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Divider Minimal */
+.sidebar-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    margin: 8px 12px;
+}
+
+/* Modern Scrollbar untuk sidebar */
+#sidebar::-webkit-scrollbar {
+    width: 3px;
+}
+
+#sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+#sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Animasi untuk update avatar dan nama */
+.avatar-updated {
+    animation: avatarPop 0.3s ease-out;
+}
+
+.name-updated {
+    animation: nameGlow 0.3s ease-out;
+}
+
+.placeholder-updated {
+    animation: placeholderPulse 0.3s ease-out;
+}
+
+@keyframes avatarPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); filter: brightness(1.2); }
+    100% { transform: scale(1); }
+}
+
+@keyframes nameGlow {
+    0% { text-shadow: 0 0 0 rgba(255,255,255,0); }
+    50% { text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+    100% { text-shadow: 0 0 0 rgba(255,255,255,0); }
+}
+
+@keyframes placeholderPulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Smooth transition untuk semua perubahan */
+img, .text-white, input::placeholder {
+    transition: all 0.2s ease;
+}
+
+/* Chat Loading Spinner */
+.chat-loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 200px;
+    width: 100%;
+}
+
+.chat-loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: #ffffff;
+    animation: chat-spin 0.8s linear infinite;
+    margin-bottom: 16px;
+}
+
+.chat-loading-text {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    animation: chat-pulse 1.5s ease-in-out infinite;
+}
+
+.chat-loading-subtext {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+@keyframes chat-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes chat-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+/* Skeleton Loading untuk pesan */
+.skeleton-message {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.03) 25%, 
+        rgba(255, 255, 255, 0.08) 50%, 
+        rgba(255, 255, 255, 0.03) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 12px;
+    height: 60px;
+    margin-bottom: 12px;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Avatar di riwayat chat */
+#chat-history img {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#chat-history .group:hover img {
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* Status indicator kecil */
+#chat-history .w-2.h-2 {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Multi Personality Selection Styles */
+.personality-card {
+    position: relative;
+    overflow: visible;
+}
+
+.personality-card.multi-selected {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid white;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.personality-card.selected-1 {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.3);
+}
+
+.personality-card.selected-2 {
+    border-color: #4ecdc4;
+    box-shadow: 0 0 15px rgba(78, 205, 196, 0.3);
+}
+
+.personality-card.selected-3 {
+    border-color: #ffe66d;
+    box-shadow: 0 0 15px rgba(255, 230, 109, 0.3);
+}
+
+.selection-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    background: white;
+    color: black;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid black;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    z-index: 10;
+}
+
+.personality-card.selected-1 .selection-badge {
+    background: #ff6b6b;
+    color: white;
+}
+
+.personality-card.selected-2 .selection-badge {
+    background: #4ecdc4;
+    color: white;
+}
+
+.personality-card.selected-3 .selection-badge {
+    background: #ffe66d;
+    color: black;
+}
+
+/* Counter style */
+#personality-counter {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* Custom card style */
+.personality-card.custom-card {
+    border-color: #a78bfa;
+}
+
+.personality-card.custom-card.multi-selected {
+    border-color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.15);
+}
+
+/* Preview untuk multi */
+.preview-icon {
+    font-size: 20px;
+    filter: none;
+}
+
+.preview-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+}
+
+
+
 /* Love Level Animations */
 @keyframes love-pop {
     0% { transform: scale(1); }
@@ -778,6 +1092,8 @@
                 }
             }
         }
+        
+        
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -3027,7 +3343,7 @@ button {
                                placeholder="Enter AI name..."
                                maxlength="50">
                         <div class="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs text-gray-600">
-                            <span id="ai-name-char-count">0/50</span>
+                            <span id="ai-name-char-count">0/16</span>
                         </div>
                     </div>
                 </div>
@@ -3865,71 +4181,117 @@ button {
 <!-- Sidebar - Cari bagian ini dan tambahkan kode moon mission di dalamnya -->
 <div id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-gray-950 border-r border-gray-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 flex flex-col">
     
-    <!-- Header Sidebar dengan Settings Button -->
-    <div class="p-3 border-b border-gray-800">
-        <div class="flex items-center justify-between mb-3">
-            <button onclick="openSettings()" class="flex items-center gap-2 p-2 hover:bg-gray-800 rounded-lg transition-all group">
-                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-white to-gray-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <span class="text-white font-bold text-xs"><i class="ri-settings-fill"></i></span>
+<!-- Header Sidebar dengan Settings Button - Desain Modern -->
+<div class="p-4 border-b border-gray-800/50">
+    <div class="flex items-center justify-between mb-4">
+        <button onclick="openSettings()" class="flex items-center gap-3 p-2 hover:bg-white/5 rounded-xl transition-all group w-full">
+            <!-- Profile Circle with Gradient -->
+            <div class="relative">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 group-hover:border-white/20 transition-all">
+                    <svg class="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    </svg>
                 </div>
-                <div class="flex flex-col items-start">
-                    <span class="font-semibold text-sm group-hover:text-gray-300 transition-colors">Settings</span>
-                    <span class="text-xs text-gray-500">Kelola akun Anda</span>
+                <!-- Status Dot -->
+                <div class="absolute -top-0.5 -right-0.5 w-3 h-3">
+                    <div class="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-75"></div>
+                    <div class="relative w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
                 </div>
-            </button>
-            <button onclick="closeSidebar()" class="md:hidden p-2 hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-white" title="Tutup Menu">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
+            </div>
+            
+            <div class="flex-1 text-left">
+                <span class="font-medium text-sm text-white/90 group-hover:text-white transition-colors">Settings</span>
+                <p class="text-[10px] text-white/40 group-hover:text-white/60 transition-colors">Kelola akun</p>
+            </div>
+            
+            <!-- Arrow Icon -->
+            <svg class="w-4 h-4 text-white/30 group-hover:text-white/50 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+        
+        <button onclick="closeSidebar()" class="md:hidden p-2 hover:bg-white/5 rounded-lg transition-colors text-white/50 hover:text-white/80">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
 
-        <!-- User Info Box -->
-        <div id="user-info" class="flex items-center gap-3 p-2 bg-gray-900/50 rounded-lg border border-gray-800 hidden">
-            <img id="user-avatar" src="" alt="User" class="w-10 h-10 rounded-full border border-gray-700">
+    <!-- User Info Box - Desain Modern Minimalis -->
+    <div id="user-info" class="hidden">
+        <div class="flex items-center gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/5 hover:border-white/10 transition-all">
+            <!-- Avatar dengan border gradient -->
+            <div class="relative">
+                <div class="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <img id="user-avatar" src="" alt="User" 
+                     class="relative w-10 h-10 rounded-full border border-white/10 object-cover">
+                <!-- Status indicator -->
+                <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-gray-900"></div>
+            </div>
+            
             <div class="flex-1 min-w-0">
-                <p id="user-name" class="text-sm font-medium text-white truncate">User</p>
-                <p id="user-email" class="text-xs text-gray-500 truncate">email@example.com</p>
+                <p id="user-name" class="text-sm font-medium text-white/90 truncate flex items-center gap-1">
+                    <span class="truncate">User</span>
+                    <svg class="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </p>
+                <p id="user-email" class="text-[10px] text-white/40 truncate">email@example.com</p>
+            </div>
+            
+            <!-- Badge Online -->
+            <div class="px-1.5 py-0.5 bg-green-500/10 border border-green-500/20 rounded-full">
+                <span class="text-[8px] font-medium text-green-400">● Online</span>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- MOON MISSION - DIPINDAHKAN KE SINI (TAMBAHKAN BAGIAN INI) -->
-    <div class="p-3 border-b border-gray-800">
-        <div id="sidebar-moon-mission" class="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-3 border border-purple-500/30 relative overflow-hidden group cursor-pointer" onclick="openMoonMissionModal()">
-            <!-- Background effect -->
-            <div class="absolute inset-0 bg-gradient-to-r from-purple-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            
+<!-- MOON MISSION - Desain Modern Minimalis -->
+<div class="px-4 py-2">
+    <div id="sidebar-moon-mission" class="group relative overflow-hidden cursor-pointer rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent border border-white/5 hover:border-white/10 transition-all">
+        <!-- Background Effect -->
+        <div class="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        
+        <!-- Glass Overlay -->
+        <div class="absolute inset-0 backdrop-blur-[2px]"></div>
+        
+        <div class="relative p-3">
             <div class="flex items-center gap-3">
-                <!-- Moon icon -->
+                <!-- Moon Icon dengan Animasi -->
                 <div class="relative flex-shrink-0">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
-                        <span class="text-white text-lg">🌙</span>
+                    <div class="absolute inset-0 bg-purple-500/20 rounded-full blur-md group-hover:bg-purple-500/30 transition-all"></div>
+                    <div class="relative w-10 h-10 rounded-full bg-gradient-to-br from-purple-400/20 to-purple-600/20 flex items-center justify-center border border-purple-500/30 group-hover:border-purple-500/50 transition-all">
+                        <span class="text-lg filter drop-shadow-lg">🌙</span>
                     </div>
-                    <div id="sidebar-moon-badge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-white text-black text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-gray-900">
+                    <!-- Level Badge -->
+                    <div id="sidebar-moon-badge" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-white/10 backdrop-blur-sm border border-white/20 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-lg">
                         <span id="sidebar-level-badge">0</span>
                     </div>
                 </div>
                 
-                <!-- Text content -->
+                <!-- Content -->
                 <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1">
-                        <h4 class="text-sm font-semibold text-white">Moon Mission</h4>
-                        <span class="text-[10px] text-purple-400">Level 250</span>
+                    <div class="flex items-center justify-between mb-0.5">
+                        <h4 class="text-xs font-medium text-white/80 group-hover:text-white transition-colors">Moon Mission</h4>
+                        <span class="text-[8px] text-purple-400/80 group-hover:text-purple-400">Level 250</span>
                     </div>
-                    <p class="text-xs text-gray-400 truncate">Dapatkan Rp 25.000</p>
                     
-                    <!-- Progress bar mini -->
-                    <div class="mt-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-                        <div id="sidebar-moon-progress" class="h-full bg-gradient-to-r from-purple-400 to-purple-600" style="width: 0%"></div>
+                    <!-- Progress Bar Minimal -->
+                    <div class="mt-1.5 h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div id="sidebar-moon-progress" class="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    
+                    <!-- Reward Info -->
+                    <div class="flex items-center justify-between mt-1.5">
+                        <p class="text-[9px] text-white/40 group-hover:text-white/60 transition-colors">Dapatkan Rp 25.000</p>
+                        <div id="sidebar-claimable-dot" class="hidden w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
                     </div>
                 </div>
-                
-                <!-- Claim indicator -->
-                <div id="sidebar-claimable-dot" class="hidden w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0"></div>
             </div>
         </div>
     </div>
+</div>
 
     <div class="p-3 border-b border-gray-800">
         <button onclick="newChat()" class="w-full flex items-center gap-3 px-4 py-2.5 bg-white text-black rounded-lg hover:bg-gray-200 transition-all duration-200 font-medium text-sm">
@@ -4117,6 +4479,8 @@ button {
             </div>
         </template>
     </div>
+    
+    
     
 <!-- Modern Monochrome Music Player - Redesigned -->
 <div id="music-player-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/80 backdrop-blur-lg p-4">
