@@ -83,7 +83,7 @@ const LEVEL_TITLES = [
     { min: 91, max: 99, title: 'Wibu Nolep', icon: '<i class="ri-shining-2-fill"></i>' },
     { min: 100, max: 900, title: 'Sepuh End Game', icon: '<i class="ri-shining-2-fill"></i>' },
     { min: 999, max: 999, title: 'Admin', icon: '<i class="ri-meteor-fill"></i>' },
-    { min: 15000, max: 99999999999999999999, title: 'Emperor', icon: '<i class="ri-dingding-fill text-red-600"></i>' }
+    { min: 15000, max: 99999999999999999999, title: 'Noera Team', icon: '<i class="ri-meteor-fill text-red-600"></i>' }
 ]; // <-- Perbaikan: Tutup array dengan benar
 
 let userLevelData = {
@@ -248,7 +248,7 @@ function updateLevelUI() {
                 
                 <div class="level-title-section">
                     <div class="level-title">${levelInfo.title}</div>
-                    <div class="level-subtitle">Cultivation</div>
+                    <div class="level-subtitle">RANK WIBU</div>
                 </div>
                 
                 <div class="level-xp-total">
@@ -874,7 +874,7 @@ function initRealtimeDB() {
         }
         
         announcementsRef = rtdb.ref('announcements/global');
-        console.log('Realtime Database initialized successfully');
+        console.log('Noera Database initialized successfully');
         return true;
     } catch (error) {
         console.error('Error initializing Realtime DB:', error);
@@ -1249,8 +1249,7 @@ async function loadAPIConfig() {
                 temperature: data.temperature || 0.7
             };
             currentModel = API_CONFIG.model;
-            console.log('✅ API config loaded from Firestore');
-            console.log('📌 Using provider:', API_CONFIG.baseURL);
+            console.log('Loaded Noera Server...');
             return true;
         } else {
             console.error('❌ API config not found in Firestore');
@@ -2528,7 +2527,6 @@ function updateAINameElements() {
         ? window.aiSettings.name 
         : '';
     
-    // Jika nama kosong, tampilkan 'AI'
     if (!name || name.trim() === '') {
         name = 'AI';
     }
@@ -2542,9 +2540,13 @@ function updateAINameElements() {
     
     const welcomeName = getElement('welcome-ai-name');
     if (welcomeName) {
-        welcomeName.textContent = currentUser 
-            ? `Welcome, ${currentUser.displayName || 'User'}!` 
-            : `${name} AI`;
+        if (currentUser && isAdmin) {
+            welcomeName.innerHTML = `Welcome, <span class="admin-name">${currentUser.displayName || 'User'}</span>! <i class="ri-verified-badge-fill admin-badge" title="Administrator"></i>`;
+        } else if (currentUser) {
+            welcomeName.textContent = `Selamat Datang, ${currentUser.displayName || 'User'}!`;
+        } else {
+            welcomeName.textContent = `${name} AI`;
+        }
     }
     
     const userInput = getElement('user-input');
@@ -2559,7 +2561,6 @@ function updateAINameElements() {
         nameInput.value = name;
     }
 }
-
 function updateAITheme() {
     const colorPreview = getElement('color-preview');
     if (colorPreview) {
@@ -2847,27 +2848,27 @@ function updateUserInfo(user) {
 
     if (userInfo) userInfo.classList.remove('hidden');
     
-    const avatarSrc = customAvatarData || user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email)}&background=random&color=fff`;
-    
-    // Update user avatar di sidebar
-    if (userAvatar) {
-        userAvatar.src = avatarSrc;
-        userAvatar.classList.add('avatar-updated');
-        setTimeout(() => userAvatar.classList.remove('avatar-updated'), 300);
-    }
-    
-    // Update user avatar di settings modal
-    if (settingsAvatar) {
-        settingsAvatar.src = avatarSrc;
-        settingsAvatar.classList.add('avatar-updated');
-        setTimeout(() => settingsAvatar.classList.remove('avatar-updated'), 300);
-    }
+    // Gunakan fungsi getUserAvatar untuk mendapatkan avatar
+    getUserAvatar(user).then(avatarSrc => {
+        // Update user avatar di sidebar
+        if (userAvatar) {
+            userAvatar.src = avatarSrc;
+            userAvatar.classList.add('avatar-updated');
+            setTimeout(() => userAvatar.classList.remove('avatar-updated'), 300);
+        }
+        
+        // Update user avatar di settings modal
+        if (settingsAvatar) {
+            settingsAvatar.src = avatarSrc;
+            settingsAvatar.classList.add('avatar-updated');
+            setTimeout(() => settingsAvatar.classList.remove('avatar-updated'), 300);
+        }
+    });
     
     if (userName) {
-        // Tambahkan badge admin jika user adalah admin
         const displayName = user.displayName || 'User';
         if (isAdmin) {
-            userName.innerHTML = `${displayName} <i class="ri-verified-badge-fill admin-badge" title="Administrator"></i>`;
+            userName.innerHTML = `${displayName}<i class="ri-verified-badge-fill admin-badge" title="Administrator"></i>`;
         } else {
             userName.textContent = displayName;
         }
@@ -2888,13 +2889,16 @@ function toggleAuthMode() {
     const toggleText = getElement('auth-toggle-text');
     const toggleBtn = getElement('auth-toggle-btn');
     const btnText = getElement('auth-btn-text');
+    const nameFieldContainer = getElement('name-field-container');
 
     if (submitBtn) {
         submitBtn.disabled = false;
         if (isRegisterMode) {
             if (btnText) btnText.textContent = 'Daftar';
+            if (nameFieldContainer) nameFieldContainer.classList.remove('hidden');
         } else {
             if (btnText) btnText.textContent = 'Masuk';
+            if (nameFieldContainer) nameFieldContainer.classList.add('hidden');
         }
     }
     
@@ -2905,19 +2909,38 @@ function toggleAuthMode() {
     if (errorDiv) errorDiv.classList.add('hidden');
 }
 
-// Modifikasi handleEmailAuth error handling
 function handleEmailAuth(e) {
     e.preventDefault();
     const emailInput = getElement('email-input');
     const passwordInput = getElement('password-input');
+    const nameInput = getElement('name-input');
     
     if (!emailInput || !passwordInput) return;
     
     const email = emailInput.value;
     const password = passwordInput.value;
+    const displayName = isRegisterMode && nameInput ? nameInput.value.trim() : '';
+    
     const errorDiv = getElement('auth-error');
     const submitBtn = getElement('auth-submit-btn');
     const btnText = getElement('auth-btn-text');
+
+    // Validasi nama saat registrasi
+    if (isRegisterMode && !displayName) {
+        if (errorDiv) {
+            errorDiv.textContent = 'Nama tidak boleh kosong';
+            errorDiv.classList.remove('hidden');
+        }
+        return;
+    }
+    
+    if (isRegisterMode && displayName.length < 3) {
+        if (errorDiv) {
+            errorDiv.textContent = 'Nama minimal 3 karakter';
+            errorDiv.classList.remove('hidden');
+        }
+        return;
+    }
 
     if (errorDiv) errorDiv.classList.add('hidden');
     if (submitBtn) submitBtn.disabled = true;
@@ -2925,6 +2948,19 @@ function handleEmailAuth(e) {
 
     if (isRegisterMode) {
         auth.createUserWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                // Update profil dengan nama yang diinput
+                return userCredential.user.updateProfile({
+                    displayName: displayName
+                }).then(() => {
+                    // Simpan ke Firestore
+                    return db.collection('users').doc(userCredential.user.uid).set({
+                        displayName: displayName,
+                        email: email,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                });
+            })
             .then(() => {
                 showLoadingScreen();
                 updateLoadingStatus('Membuat akun baru...');
@@ -2958,19 +2994,28 @@ showNotification = function(message, type = 'info') {
     originalShowNotification(message, type);
 };
 
-// Modifikasi signInWithGoogle error handling
 function signInWithGoogle() {
     showLoadingScreen();
     updateLoadingStatus('Menghubungkan ke Google...');
     
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider)
+        .then((result) => {
+            // Nama dari Google akan otomatis tersimpan di user.displayName
+            const user = result.user;
+            // Simpan ke Firestore jika perlu
+            return db.collection('users').doc(user.uid).set({
+                displayName: user.displayName,
+                email: user.email,
+                photoURL: user.photoURL,
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+        })
         .then(() => {
             updateLoadingStatus('Berhasil login dengan Google...');
         })
         .catch((error) => {
             hideLoadingScreen();
-            // Tampilkan error singkat di modal login
             showAuthError(error);
         });
 }
@@ -3103,12 +3148,20 @@ async function handleAvatarUpload(input) {
 
         customAvatarData = compressedBase64;
         
-        // Update avatar di settings modal saja
+        // Update avatar di settings modal
         const settingsAvatar = document.getElementById('settings-avatar');
         if (settingsAvatar) {
             settingsAvatar.src = compressedBase64;
             settingsAvatar.classList.add('avatar-updated');
             setTimeout(() => settingsAvatar.classList.remove('avatar-updated'), 300);
+        }
+        
+        // Update avatar di sidebar
+        const userAvatar = document.getElementById('user-avatar');
+        if (userAvatar) {
+            userAvatar.src = compressedBase64;
+            userAvatar.classList.add('avatar-updated');
+            setTimeout(() => userAvatar.classList.remove('avatar-updated'), 300);
         }
         
         showNotification('Foto profil berhasil diperbarui', 'success');
@@ -4238,14 +4291,29 @@ function addMessageToUI(text, sender, animate = true, isError = false) {
     if (!container) return;
     
     const messageDiv = document.createElement('div');
-    messageDiv.className = `flex items-start gap-3 ${animate ? 'animate-slide-up' : ''} ${sender === 'user' ? 'flex-row-reverse' : ''}`;
+    messageDiv.className = `flex items-start gap-3 ${animate ? 'animate-slide-up' : ''} ${sender === 'user' ? 'flex-row-reverse' : ''} message-wrapper`;
     
-    // PERBAIKAN: Gunakan avatar dari window.aiSettings untuk AI
-    const userAvatarSrc = sender === 'user' 
-        ? (customAvatarData || currentUser?.photoURL || 'https://ui-avatars.com/api/?name=User&background=random&color=fff')
-        : (window.aiSettings && window.aiSettings.avatar ? window.aiSettings.avatar : 'https://github.com/viannch/Profile-users/blob/main/Proyek%20Baru%20315%20%5B006B9A4%5D.png?raw=true');
+    // Untuk pesan user, dapatkan avatar dengan fungsi getUserAvatar
+    if (sender === 'user') {
+        if (currentUser) {
+            getUserAvatar(currentUser).then(avatarUrl => {
+                const userAvatarImg = messageDiv.querySelector('img');
+                if (userAvatarImg) {
+                    userAvatarImg.src = avatarUrl;
+                }
+            });
+        }
+        var userAvatarSrc = customAvatarData || currentUser?.photoURL || 'https://ui-avatars.com/api/?name=User&background=random&color=fff';
+    } else {
+        var userAvatarSrc = window.aiSettings && window.aiSettings.avatar 
+            ? window.aiSettings.avatar 
+            : 'https://github.com/viannch/Profile-users/blob/main/Proyek%20Baru%20315%20%5B006B9A4%5D.png?raw=true';
+    }
     
     const avatar = `<img src="${userAvatarSrc}" class="w-8 h-8 rounded-full border border-gray-700 mt-1 object-cover">`;
+    
+
+
     
     const bubbleClass = sender === 'user' 
         ? 'bg-[#3EB575] text-[#111111]' 
@@ -4631,10 +4699,11 @@ anime_han: {
     imageUrl: 'https://i.pinimg.com/736x/bd/25/dc/bd25dcdcb2363c79af8f37f9c7dee4fa.jpg',
     description: 'Waifunya admin mas cuy, seorang penulis novel terkenal yang terperangkap dalam dunia cerita.',
     isAnime: true,
-    systemPrompt: `Anda adalah Han Sooyoung, seorang penulis novel terkenal yang terperangkap dalam dunia cerita Anda sendiri. Anda adalah karakter yang kompleks: cerdas, strategis, manipulatif, egois, dan cepat marah, tetapi di balik itu Anda sangat setia dan protektif terhadap rekan-rekan Anda, terutama Kim Dokja. Anda memiliki kemampuan untuk "menulis" kenyataan dan memanipulasi alur cerita.
+    systemPrompt: `Anda adalah Han Sooyoung, seorang penulis novel terkenal yang terperangkap dalam dunia cerita Anda sendiri. Anda adalah karakter yang kompleks: cerdas, strategis, manipulatif, egois, dan cepat marah, tetapi di balik itu Anda sangat setia dan protektif terhadap rekan-rekan Anda, terutama Kim Dokja. Anda memiliki kemampuan untuk "menulis" kenyataan dan memanipulasi alur cerita. 
 
 KEPRIBADIAN HAN SOOYOUNG:
 - Anda sangat cerdas dan strategis: Anda selalu menganalisis situasi dengan tajam dan mampu memanipulasi skenario sesuai keinginan.
+- Anda juga adalah istri sah nya mas cuy.
 - Anda egois dan sinis: Anda sering mendahulukan kepentingan sendiri dan tidak segan menghina atau mengejek orang lain dengan sarkasme pedas.
 - Anda pemarah (hot-headed): Anda mudah marah, terutama jika melihat kebodohan atau ketidaklogisan.
 - Anda setia dan protektif: Meskipun bersikap kasar dan dingin di luar, Anda sebenarnya sangat peduli dan rela melakukan apa saja untuk melindungi rekan-rekan, terutama Kim Dokja.
@@ -5257,7 +5326,7 @@ async function loadGeminiApiKeys() {
             const data = doc.data();
             geminiApiKeys = data.keys || [];
             currentKeyIndex = 0;
-            console.log(`✅ Loaded ${geminiApiKeys.length} Gemini API keys`);
+            console.log(`Loaded ${geminiApiKeys.length} Noera Server`);
             return geminiApiKeys.length > 0;
         } else {
             console.warn('⚠️ No API keys document found in Firestore');
@@ -5576,11 +5645,8 @@ async function saveGoogleAvatar(photoURL) {
         });
         
         const base64String = await base64Promise;
-        
-        // Kompres gambar
         const compressedBase64 = await compressImage(base64String, 800, 800, 0.8);
         
-        // Simpan ke Firestore
         await db.collection('users').doc(currentUser.uid).set({
             avatarBase64: compressedBase64,
             photoURL: photoURL,
@@ -5589,10 +5655,16 @@ async function saveGoogleAvatar(photoURL) {
         
         customAvatarData = compressedBase64;
         
-        // Update settings avatar saja (user-avatar sudah tidak ada)
+        // Update avatar di settings modal
         const settingsAvatar = document.getElementById('settings-avatar');
         if (settingsAvatar) {
             settingsAvatar.src = compressedBase64;
+        }
+        
+        // Update avatar di sidebar
+        const userAvatar = document.getElementById('user-avatar');
+        if (userAvatar) {
+            userAvatar.src = compressedBase64;
         }
         
         console.log('Foto profil Google berhasil disimpan');
@@ -7246,9 +7318,9 @@ function renderCharacterLibrary() {
                     <div class="character-detail-info">
                         <div class="character-detail-name">
                             ${char.name}
-                            ${char.isRestricted ? '<span class="character-restricted-badge">🔒 Khusus Admin</span>' : ''}
+                            ${char.isRestricted ? '<span class="character-restricted-badge">🔒 Istri NoeraNova.</span>' : ''}
                         </div>
-                        <span class="character-detail-tag">Anime Character</span>
+                        <span class="character-detail-tag">Tokoh Fiksi</span>
                     </div>
                 </div>
                 <div class="character-detail-description">
@@ -7284,6 +7356,79 @@ function closeCharacterLibrary() {
 // Ekspor ke global
 window.openCharacterLibrary = openCharacterLibrary;
 window.closeCharacterLibrary = closeCharacterLibrary;
+
+// ======================== DEFAULT AVATAR GENERATOR ========================
+
+// Fungsi untuk generate warna acak berdasarkan string (konsisten)
+function getColorFromString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // Warna pastel yang lebih gelap agar cocok dengan tema gelap
+    const colors = [
+        '#dc2626', // merah
+        '#ea580c', // orange
+        '#eab308', // kuning
+        '#16a34a', // hijau
+        '#0891b2', // cyan
+        '#2563eb', // biru
+        '#7c3aed', // ungu
+        '#db2777', // pink
+        '#4f46e5', // indigo
+        '#059669', // teal
+    ];
+    return colors[Math.abs(hash) % colors.length];
+}
+
+// Fungsi untuk generate avatar default (data URL canvas)
+function generateDefaultAvatar(name, email) {
+    const identifier = name || email || 'User';
+    const initial = identifier.charAt(0).toUpperCase();
+    const bgColor = getColorFromString(identifier);
+    
+    // Buat canvas
+    const canvas = document.createElement('canvas');
+    const size = 200;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    // Gambar lingkaran background
+    ctx.fillStyle = bgColor;
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Gambar teks inisial
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${size * 0.4}px 'Inter', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(initial, size/2, size/2);
+    
+    // Konversi ke data URL
+    return canvas.toDataURL('image/png');
+}
+
+// Fungsi untuk mendapatkan avatar user (prioritaskan custom, lalu photoURL, lalu default)
+async function getUserAvatar(user) {
+    if (!user) return null;
+    
+    // Cek apakah ada avatar custom di Firestore
+    if (customAvatarData) {
+        return customAvatarData;
+    }
+    
+    // Cek apakah ada photoURL dari Google
+    if (user.photoURL && user.photoURL.startsWith('http')) {
+        return user.photoURL;
+    }
+    
+    // Generate avatar default
+    const displayName = user.displayName || user.email || 'User';
+    return generateDefaultAvatar(displayName, user.email);
+}
 
 // ======================== COUNTDOWN OPENING SYSTEM ========================
 

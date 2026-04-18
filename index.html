@@ -18,6 +18,167 @@
 <style>
 
 
+
+/* ======================== MODERN X LOGO ======================== */
+
+/* Container X logo */
+.x-logo-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* X logo utama dengan efek neon */
+.x-logo-modern {
+    position: relative;
+    font-size: 48px;
+    font-weight: 300;
+    background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 50%, #ffffff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    animation: xLogoGlow 3s ease-in-out infinite;
+    display: inline-block;
+}
+
+/* Efek garis silang dengan pseudo-element */
+.x-logo-modern::before,
+.x-logo-modern::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #fff, transparent);
+    transform-origin: center;
+    opacity: 0.5;
+}
+
+.x-logo-modern::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+    animation: xLinePulse 2s ease-in-out infinite;
+}
+
+.x-logo-modern::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+    animation: xLinePulse 2s ease-in-out infinite 0.3s;
+}
+
+/* Efek lingkaran berputar di sekitar X */
+.x-ring {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    animation: xRingRotate 8s linear infinite;
+}
+
+.x-ring::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+}
+
+/* X logo untuk ukuran kecil (sidebar dll) */
+.x-logo-small {
+    font-size: 20px;
+    font-weight: 400;
+    background: linear-gradient(135deg, #ffffff 0%, #888888 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+/* Animations */
+@keyframes xLogoGlow {
+    0%, 100% {
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        opacity: 1;
+    }
+    50% {
+        text-shadow: 0 0 40px rgba(255, 255, 255, 0.6);
+        opacity: 0.9;
+    }
+}
+
+@keyframes xLinePulse {
+    0%, 100% {
+        opacity: 0.3;
+        width: 50px;
+    }
+    50% {
+        opacity: 0.8;
+        width: 70px;
+    }
+}
+
+@keyframes xRingRotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* X logo dengan efek particle */
+.x-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    opacity: 0;
+    animation: xParticleFloat 2s ease-out infinite;
+}
+
+.x-particle:nth-child(1) { top: -15px; left: 50%; animation-delay: 0s; }
+.x-particle:nth-child(2) { bottom: -15px; left: 50%; animation-delay: 0.5s; }
+.x-particle:nth-child(3) { top: 50%; left: -15px; animation-delay: 1s; }
+.x-particle:nth-child(4) { top: 50%; right: -15px; animation-delay: 1.5s; }
+
+@keyframes xParticleFloat {
+    0% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.5);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .x-logo-container {
+        width: 45px;
+        height: 45px;
+    }
+    .x-logo-modern {
+        font-size: 36px;
+    }
+    .x-ring {
+        width: 55px;
+        height: 55px;
+    }
+}
+
 /* Character Library - Single Column Card */
 .character-detail-card {
     background: rgba(255, 255, 255, 0.02);
@@ -3885,32 +4046,11 @@ button {
         position: relative;
         z-index: 2;
     }
-    
-    /* Countdown overlay styles */
-#countdown-overlay {
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-}
-
-#countdown-overlay.hide {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
-
-/* Bounce animation for dots */
-@keyframes bounce {
-    0%, 60%, 100% { transform: translateY(0); }
-    30% { transform: translateY(-8px); }
-}
-
-.animate-bounce {
-    animation: bounce 1.4s infinite ease-in-out;
-}
 </style>
 </head>
 <body class="h-screen overflow-hidden bg-black text-white antialiased">
     
-    <!-- Countdown Overlay -->
+        <!-- Countdown Overlay -->
 <div id="countdown-overlay" class="fixed inset-0 z-[10000] bg-black flex flex-col items-center justify-center transition-all duration-500">
         
         <!-- Title -->
@@ -3996,15 +4136,22 @@ button {
             </div>
             
             <!-- X Symbol with cool animation -->
-            <div class="relative">
-                <div class="absolute inset-0 flex items-center justify-center">
-
-                </div>
-                <div class="relative text-xl sm:text-2xl font-thin text-white/80" 
-                     style="animation: spin-scale 2s ease-in-out infinite;">
-                   <i class="ri-links-fill"></i>
-                </div>
-            </div>
+<!-- X Symbol with cool animation -->
+<div class="relative">
+    <div class="x-logo-container">
+        
+        <!-- Particle effects -->
+        <div class="x-particle"></div>
+        <div class="x-particle"></div>
+        <div class="x-particle"></div>
+        <div class="x-particle"></div>
+        
+        <!-- Logo X utama -->
+        <div class="x-logo-modern">
+            <i class="ri-close-fill"></i>
+        </div>
+    </div>
+</div>
             
             <!-- Chizunime Avatar (Right) -->
             <div class="relative group">
@@ -4070,7 +4217,24 @@ button {
         </div>
         
         <!-- Simbol X di tengah - Modern -->
-        <div class="text-2xl font-thin text-white select-none">                   <i class="ri-links-fill"></i></div>
+        <div class="text-2xl font-thin text-white select-none">
+            <!-- X Symbol with cool animation -->
+<div class="relative">
+    <div class="x-logo-container">
+        
+        <!-- Particle effects -->
+        <div class="x-particle"></div>
+        <div class="x-particle"></div>
+        <div class="x-particle"></div>
+        <div class="x-particle"></div>
+        
+        <!-- Logo X utama -->
+        <div class="x-logo-modern">
+            <i class="ri-close-fill"></i>
+        </div>
+    </div>
+</div>
+        </div>
         
         <!-- Avatar Chizunime (Kanan) -->
         <div class="relative group cursor-pointer">
@@ -4108,58 +4272,80 @@ button {
                     <div class="flex-1 border-t border-white/10"></div>
                 </div>
 
-                <form id="email-form" onsubmit="handleEmailAuth(event)" class="space-y-4">
-                    <div class="space-y-4">
-                        <div class="relative group">
-                            <input type="email" 
-                                   id="email-input" 
-                                   required
-                                   class="peer w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-transparent focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300"
-                                   placeholder="Email">
-                            <label for="email-input" 
-                                   class="absolute left-4 top-4 text-gray-500 text-sm transition-all duration-300 
-                                          peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-600
-                                          peer-focus:top-1 peer-focus:text-xs peer-focus:text-white/70
-                                          peer-[:not(:placeholder-shown)]:top-1 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-white/70">
-                                Alamat Email
-                            </label>
-                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                </svg>
-                            </div>
-                        </div>
+<form id="email-form" onsubmit="handleEmailAuth(event)" class="space-y-4">
+    <div class="space-y-4">
+        <!-- Kolom Nama (hanya muncul saat registrasi) -->
+        <div id="name-field-container" class="relative group hidden">
+            <input type="text" 
+                   id="name-input" 
+                   class="peer w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-transparent focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300"
+                   placeholder="Nama Pengguna">
+            <label for="name-input" 
+                   class="absolute left-4 top-4 text-gray-500 text-sm transition-all duration-300 
+                          peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-600
+                          peer-focus:top-1 peer-focus:text-xs peer-focus:text-white/70
+                          peer-[:not(:placeholder-shown)]:top-1 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-white/70">
+                Nama Lengkap
+            </label>
+            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+            </div>
+        </div>
+        
+        <!-- Kolom Email -->
+        <div class="relative group">
+            <input type="email" 
+                   id="email-input" 
+                   required
+                   class="peer w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-transparent focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300"
+                   placeholder="Email">
+            <label for="email-input" 
+                   class="absolute left-4 top-4 text-gray-500 text-sm transition-all duration-300 
+                          peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-600
+                          peer-focus:top-1 peer-focus:text-xs peer-focus:text-white/70
+                          peer-[:not(:placeholder-shown)]:top-1 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-white/70">
+                Alamat Email
+            </label>
+            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+            </div>
+        </div>
 
-                        <div class="relative group">
-                            <input type="password" 
-                                   id="password-input" 
-                                   required
-                                   class="peer w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-transparent focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300"
-                                   placeholder="Password">
-                            <label for="password-input" 
-                                   class="absolute left-4 top-4 text-gray-500 text-sm transition-all duration-300 
-                                          peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-600
-                                          peer-focus:top-1 peer-focus:text-xs peer-focus:text-white/70
-                                          peer-[:not(:placeholder-shown)]:top-1 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-white/70">
-                                Kata Sandi
-                            </label>
-                            <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white transition-colors">
-                                <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+        <!-- Kolom Password -->
+        <div class="relative group">
+            <input type="password" 
+                   id="password-input" 
+                   required
+                   class="peer w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-transparent focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all duration-300"
+                   placeholder="Password">
+            <label for="password-input" 
+                   class="absolute left-4 top-4 text-gray-500 text-sm transition-all duration-300 
+                          peer-placeholder-shown:text-base peer-placeholder-shown:top-4 peer-placeholder-shown:text-gray-600
+                          peer-focus:top-1 peer-focus:text-xs peer-focus:text-white/70
+                          peer-[:not(:placeholder-shown)]:top-1 peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-white/70">
+                Kata Sandi
+            </label>
+            <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-white transition-colors">
+                <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
 
-                    <div id="auth-error" class="hidden text-red-400 text-xs text-center bg-red-400/10 py-2 rounded-lg border border-red-400/20"></div>
+    <div id="auth-error" class="hidden text-red-400 text-xs text-center bg-red-400/10 py-2 rounded-lg border border-red-400/20"></div>
 
-                    <button type="submit" id="auth-submit-btn" 
-                            class="group relative w-full px-6 py-4 bg-white text-black rounded-xl hover:bg-gray-100 transition-all duration-300 font-semibold overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
-                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                        <span id="auth-btn-text" class="relative z-10">Masuk</span>
-                    </button>
-                </form>
+    <button type="submit" id="auth-submit-btn" 
+            class="group relative w-full px-6 py-4 bg-white text-black rounded-xl hover:bg-gray-100 transition-all duration-300 font-semibold overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+        <span id="auth-btn-text" class="relative z-10">Masuk</span>
+    </button>
+</form>
 
                 <div class="mt-8 text-center">
                     <p class="text-gray-500 text-sm">
@@ -4627,7 +4813,7 @@ button {
             </div>
             <input type="text" id="custom-display-name" maxlength="14" 
                    class="w-full pl-9 pr-3 py-2.5 bg-black/20 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all duration-200"
-                   placeholder="Nama panggilanmu">
+                   placeholder="Nama pengguna">
         </div>
         
         <button id="save-name-btn" onclick="updateDisplayNameModern()" 
